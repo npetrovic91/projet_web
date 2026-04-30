@@ -1,0 +1,53 @@
+# ==============================================================
+# AUTOSAV — .htaccess RACINE
+# public_html/.htaccess — Hostinger Apache 2.4
+# ==============================================================
+
+Options -Indexes
+Options -MultiViews
+
+# ——————————————————————————————————————————————————
+# Fichiers sensibles — accès interdit
+# ——————————————————————————————————————————————————
+<FilesMatch "(^\.env|^\.htpasswd|\.log$|\.sql$|\.sh$|\.bat$|data\.json$|diagnostique\.php$|indexx\.php$|composer\.(json|lock|phar)$|composer-setup\.php$)">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # Bloquer les répertoires sensibles
+    RewriteRule ^(src|config|storage|database|tests|docs)(\/|$) - [F,L]
+
+    # Assets statiques exposes en /assets/... depuis public/assets/...
+    RewriteRule ^assets/(.*)$ public/assets/$1 [L]
+
+    # Assets statiques de public/assets/ → servis directement
+    RewriteCond %{REQUEST_URI} ^/public/assets/ [NC]
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteRule ^ - [L]
+
+    # favicon et robots
+    RewriteRule ^(favicon\.ico|robots\.txt)$ public/$1 [L]
+
+    # Tout → index.php racine (qui fait require public/index.php)
+    # NOTE : index.php PHYSIQUE est utilisé intentionnellement.
+    # Il ne redirige PAS (pas de header Location) mais délègue
+    # via require — REDIRECT_URL reste l'URL originale propre.
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^ index.php [L,QSA]
+
+</IfModule>
+
+<IfModule mod_headers.c>
+    Header unset Server
+    Header always unset X-Powered-By
+</IfModule>
