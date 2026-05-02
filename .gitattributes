@@ -1,0 +1,131 @@
+<?php
+/**
+ * AUTOSAV — Correcteur CRLF serveur (one-shot)
+ * Uploader dans public_html/ via File Manager
+ * Accéder via navigateur UNE SEULE FOIS puis supprimer immédiatement
+ *
+ * Convertit tous les \r\n en \n dans les fichiers PHP, htaccess, etc.
+ */
+
+// Sécurité minimale : token dans l'URL
+$secret = 'autosav_fix_2026';
+if (($_GET['token'] ?? '') !== $secret) {
+    http_response_code(403);
+    die('Accès refusé. Ajouter ?token=autosav_fix_2026 à l\'URL.');
+}
+
+header('Content-Type: text/html; charset=utf-8');
+set_time_limit(120);
+
+$root = __DIR__;
+$extensions = ['php', 'htaccess', 'env', 'json', 'xml', 'md', 'txt', 'sql', 'css', 'js', 'html'];
+$fixed = [];
+$skipped = [];
+$errors = [];
+
+// Dossiers à exclure (binaires ou inutiles à scanner)
+$excludeDirs = ['vendor', 'public/assets/vendor', 'storage'];
+
+function shouldExclude(string $path, string $root, array $excludeDirs): bool {
+    $rel = ltrim(str_replace($root, '', $path), '/');
+    foreach ($excludeDirs as $dir) {
+        if (str_starts_with($rel, $dir)) return true;
+    }
+    return false;
+}
+
+$iterator = new RecursiveIteratorIterator(
+    new RecursiveDirectoryIterator($root, RecursiveDirectoryIterator::SKIP_DOTS)
+);
+
+foreach ($iterator as $file) {
+    if (!$file->isFile()) continue;
+
+    $path = $file->getRealPath();
+    $ext  = strtolower($file->getExtension());
+    $base = $file->getFilename();
+
+    // Inclure .htaccess et .env (pas d'extension ou extension vide)
+    $isSpecial = in_array($base, ['.htaccess', '.env', '.env.example', '.gitattributes']);
+
+    if (!in_array($ext, $extensions) && !$isSpecial) continue;
+    if (shouldExclude($path, $root, $excludeDirs)) {
+        $skipped[] = str_replace($root . '/', '', $path);
+        continue;
+    }
+
+    $content = file_get_contents($path);
+    if ($content === false) {
+        $errors[] = $path;
+        continue;
+    }
+
+    if (strpos($content, "\r\n") === false && strpos($content, "\r") === false) {
+        // Déjà en LF — rien à faire
+        continue;
+    }
+
+    // Convertir CRLF → LF, puis CR isolés → LF
+    $converted = str_replace(["\r\n", "\r"], ["\n", "\n"], $content);
+
+    if (file_put_contents($path, $converted) !== false) {
+        $fixed[] = str_replace($root . '/', '', $path);
+    } else {
+        $errors[] = str_replace($root . '/', '', $path);
+    }
+}
+
+// ── Affichage ──────────────────────────────────────────────
+?>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>CRLF Fix — Autosav</title>
+<style>
+  body  { font-family: monospace; background: #1a1a2e; color: #eee; padding: 2rem; }
+  h2   { color: #f39c12; border-bottom: 1px solid #444; padding-bottom: .4rem; }
+  .ok  { color: #27ae60; } .err { color: #e74c3c; } .info { color: #3498db; }
+  ul   { list-style: none; padding: 0; line-height: 1.8; }
+  .box { background: #16213e; border: 1px solid #0f3460; border-radius: 6px; padding: 1rem; margin-bottom: 1.5rem; }
+  .big { font-size: 1.4rem; font-weight: bold; }
+</style>
+</head>
+<body>
+<h1 style="color:#e94560">🔧 Correcteur CRLF — Autosav</h1>
+
+<div class="box">
+    <p class="big ok">✔ Fichiers corrigés : <?= count($fixed) ?></p>
+    <p class="big err">✘ Erreurs : <?= count($errors) ?></p>
+    <p class="info">⟳ Ignorés (déjà LF ou dossier exclu) : <?= count($skipped) ?></p>
+</div>
+
+<?php if (!empty($fixed)): ?>
+<h2>✔ Fichiers convertis (CRLF → LF)</h2>
+<div class="box">
+<ul>
+<?php foreach ($fixed as $f): ?>
+    <li class="ok">✔ <?= htmlspecialchars($f) ?></li>
+<?php endforeach; ?>
+</ul>
+</div>
+<?php endif; ?>
+
+<?php if (!empty($errors)): ?>
+<h2>✘ Erreurs (permission refusée ?)</h2>
+<div class="box">
+<ul>
+<?php foreach ($errors as $e): ?>
+    <li class="err">✘ <?= htmlspecialchars($e) ?></li>
+<?php endforeach; ?>
+</ul>
+</div>
+<?php endif; ?>
+
+<div class="box" style="border-color:#e74c3c">
+    <p class="err big">⚠️ SUPPRIMER CE FICHIER MAINTENANT</p>
+    <p>Via File Manager : supprimer <strong>fix_crlf_server.php</strong></p>
+    <p>Puis tester : <a href="https://devnenad.fr/login" style="color:#3498db">https://devnenad.fr/login</a></p>
+</div>
+</body>
+</html>
