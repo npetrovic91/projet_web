@@ -1,0 +1,90 @@
+# ============================================================
+# .gitignore — Autosav / projet_web
+# Hostinger Premium : vendor/ INCLUS (pas de SSH/Composer distant)
+# ============================================================
+
+# ──────────────────────────────────────────────────────────
+# SENSIBLE — JAMAIS dans Git
+# ──────────────────────────────────────────────────────────
+.env
+.env.local
+.env.staging
+.env.production
+# Garde le modèle de référence
+!.env.example
+
+# ──────────────────────────────────────────────────────────
+# STORAGE RUNTIME — généré, jamais versionné
+# ──────────────────────────────────────────────────────────
+storage/logs/*
+storage/sessions/*
+storage/cache/*
+storage/uploads/*
+storage/exports/*
+storage/tmp/*
+
+# Garde les dossiers dans Git (via .gitkeep)
+!storage/logs/.gitkeep
+!storage/sessions/.gitkeep
+!storage/cache/.gitkeep
+!storage/uploads/.gitkeep
+!storage/exports/.gitkeep
+!storage/tmp/.gitkeep
+
+# ──────────────────────────────────────────────────────────
+# TESTS — résultats générés
+# ──────────────────────────────────────────────────────────
+tests/coverage/
+tests/.phpunit.result.cache
+.phpunit.result.cache
+phpunit.xml.bak
+
+# ──────────────────────────────────────────────────────────
+# IDE / ÉDITEURS
+# ──────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# ──────────────────────────────────────────────────────────
+# OS
+# ──────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ──────────────────────────────────────────────────────────
+# COMPOSER — vendor INCLUS intentionnellement
+# Hostinger Premium = pas de SSH → pas de "composer install"
+# vendor/ est versionné pour permettre le déploiement Git
+# ──────────────────────────────────────────────────────────
+# vendor/     ← NE PAS décommenter : vendor doit être dans Git
+composer.lock.bak
+
+# ──────────────────────────────────────────────────────────
+# ASSETS VENDOR — uploadés une seule fois via FTP
+# Trop lourds pour Git (AdminLTE ~15Mo, etc.)
+# ──────────────────────────────────────────────────────────
+public/assets/vendor/
+
+# ──────────────────────────────────────────────────────────
+# LOGS APPLICATIFS
+# ──────────────────────────────────────────────────────────
+*.log
+error_log
+
+# ──────────────────────────────────────────────────────────
+# FICHIERS TEMPORAIRES / BUILD
+# ──────────────────────────────────────────────────────────
+*.tmp
+*.bak
+*.orig
