@@ -1,113 +1,11 @@
-# ============================================================
-# .htaccess — Autosav / Racine public_html
-# Apache + mod_rewrite — Hostinger Premium
-# ============================================================
-
-# ──────────────────────────────────────────────────────────
-# SÉCURITÉ DE BASE
-# ──────────────────────────────────────────────────────────
-
-# Désactiver le listage des répertoires
-Options -Indexes -MultiViews
-
-# Désactiver les signatures serveur
-ServerSignature Off
-
-# ──────────────────────────────────────────────────────────
-# PROTECTION DES FICHIERS SENSIBLES
-# ──────────────────────────────────────────────────────────
-
-# Interdire l'accès direct aux fichiers sensibles
-<FilesMatch "^\.env|^\.git|composer\.(json|lock)|phpunit\.xml|\.htpasswd">
-    Order Allow,Deny
-    Deny from all
-</FilesMatch>
-
-# Interdire l'accès aux dossiers critiques
-<IfModule mod_rewrite.c>
-    RewriteRule ^(src|vendor|storage|config|tests|database)(/|$) - [F,L]
-</IfModule>
-
-# ──────────────────────────────────────────────────────────
-# EN-TÊTES DE SÉCURITÉ HTTP
-# ──────────────────────────────────────────────────────────
-
-<IfModule mod_headers.c>
-    Header always set X-Content-Type-Options "nosniff"
-    Header always set X-Frame-Options "SAMEORIGIN"
-    Header always set X-XSS-Protection "1; mode=block"
-    Header always set Referrer-Policy "strict-origin-when-cross-origin"
-    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=()"
-    # HSTS — activer uniquement si HTTPS confirmé
-    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
-</IfModule>
-
-# ──────────────────────────────────────────────────────────
-# CACHE DES ASSETS STATIQUES
-# ──────────────────────────────────────────────────────────
-
-<IfModule mod_expires.c>
-    ExpiresActive On
-    # Assets vendor (AdminLTE, jQuery…) — cache long
-    ExpiresByType text/css                  "access plus 1 month"
-    ExpiresByType application/javascript    "access plus 1 month"
-    ExpiresByType image/png                 "access plus 1 month"
-    ExpiresByType image/jpeg                "access plus 1 month"
-    ExpiresByType image/gif                 "access plus 1 month"
-    ExpiresByType image/svg+xml             "access plus 1 month"
-    ExpiresByType image/x-icon              "access plus 1 year"
-    ExpiresByType application/font-woff2   "access plus 1 year"
-    # HTML/PHP — pas de cache
-    ExpiresByType text/html                 "access plus 0 seconds"
-</IfModule>
-
-# ──────────────────────────────────────────────────────────
-# COMPRESSION GZIP
-# ──────────────────────────────────────────────────────────
-
-<IfModule mod_deflate.c>
-    AddOutputFilterByType DEFLATE text/html text/plain text/css
-    AddOutputFilterByType DEFLATE application/javascript application/json
-    AddOutputFilterByType DEFLATE image/svg+xml
-</IfModule>
-
-# ──────────────────────────────────────────────────────────
-# ROUTING — TOUT VERS index.php (FRONT CONTROLLER)
-# ──────────────────────────────────────────────────────────
+Options -Indexes
+Options +FollowSymLinks
 
 <IfModule mod_rewrite.c>
     RewriteEngine On
     RewriteBase /
-
-    # Si le fichier/dossier physique existe → le servir directement
-    # (assets CSS, JS, images, fonts…)
+    RewriteRule ^(src|vendor|storage|config|tests|database)(/|$) - [F,L]
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
-
-    # Sinon → tout vers index.php
     RewriteRule ^ index.php [L,QSA]
-</IfModule>
-
-# ──────────────────────────────────────────────────────────
-# PHP — Configuration runtime (si PHP handler actif)
-# ──────────────────────────────────────────────────────────
-
-<IfModule mod_php.c>
-    # Afficher les erreurs en dev, désactiver en prod
-    php_flag display_errors Off
-    php_flag log_errors On
-    php_value error_log /home/u166513890/logs/php_errors.log
-
-    # Sécurité
-    php_flag expose_php Off
-    php_value session.cookie_httponly 1
-    php_value session.cookie_secure 1
-    php_value session.cookie_samesite Strict
-    php_value session.use_strict_mode 1
-
-    # Upload max
-    php_value upload_max_filesize 10M
-    php_value post_max_size 12M
-    php_value max_execution_time 60
-    php_value memory_limit 256M
 </IfModule>
