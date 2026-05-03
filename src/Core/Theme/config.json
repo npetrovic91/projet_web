@@ -1,0 +1,150 @@
+{
+  "dev": {
+    "display_errors": true
+  },
+  "default_page_settings": {
+    "langue": "fr",
+    "title": "Mon Application Web",
+    "multi-langage": true,
+    "meta_refresh_content": 300
+  },
+  "layout": {
+    "collapsed": true,
+    "fixed-header": false,
+    "fixed-footer": false
+  },
+  "i18n": {
+    "default_locale": "fr-fr",
+    "session_key": "app_locale",
+    "param": "lang",
+    "locales": {
+      "it-it": { "label": "Italiano",     "flag": "fi fi-it" },
+      "fr-fr": { "label": "Français",     "flag": "fi fi-fr" },
+      "es-es": { "label": "Español",      "flag": "fi fi-es" },
+      "de-de": { "label": "Deutsch",      "flag": "fi fi-de" },
+      "pt-pt": { "label": "Portugal",     "flag": "fi fi-pt" },
+      "rs-rs": { "label": "Srpski",       "flag": "fi fi-rs" },
+      "en-us": { "label": "English (US)", "flag": "fi fi-us" },
+      "en-uk": { "label": "English (UK)", "flag": "fi fi-gb" }
+    }
+  },
+
+  "sidebar-brand": {
+    "data": "${$_SESSION['concession']['brands']}",
+    "enabled": true,
+    "user_level": 0
+  },
+  "sidebar-concessions": {
+    "data": "${$_SESSION['group_concession']}",
+    "enabled": true,
+    "user_level": 0
+  },
+
+  "sidebar-search": {
+    "action": "http://monsite.fr/api/recherche/recherchesidebar.php",
+    "method": "POST",
+    "technologie": "php"
+  },
+
+  "left_navbar_links": [
+    { "url": "#", "iconClass": "fas fa-bars", "text": "",        "enabled": true, "user_level": 0 },
+    { "url": "#", "iconClass": "",            "text": "Home",    "enabled": true, "user_level": 0 },
+    { "url": "#", "iconClass": "",            "text": "Contact", "enabled": true, "user_level": 0 }
+  ],
+
+  "right_navbar_links": [
+    { "url": "#", "iconClass": "bi bi-search",    "text": "", "enabled": true, "user_level": 0 },
+    { "url": "#", "iconClass": "bi bi-chat-text", "text": "", "enabled": true, "user_level": 0,
+      "badge": { "text": "7", "class": "badge-warning" } },
+    { "url": "#", "iconClass": "bi bi-bell-fill", "text": "", "enabled": true, "user_level": 0,
+      "badge": { "text": "3", "class": "badge-danger" } },
+    { "url": "#", "iconClass": "fi fi-us",        "text": "", "enabled": true, "user_level": 0 },
+    { "url": "#", "iconClass": ["maximize","minimize"], "text": "", "enabled": true, "user_level": 0 },
+
+    {
+      "type": "user-menu",
+      "enabled": true,
+      "user_level": 0,
+      "name": "Alexander Pierce",
+      "avatar": "../assets/img/user2-160x160.jpg",
+      "role": "Web Developer",
+      "member_since": "Member since Nov. 2023",
+      "links":   { "followers": "#", "sales": "#", "friends": "#" },
+      "actions": { "profile": "#",   "signout": "#" }
+    }
+  ],
+
+  "sidebar_items": [
+    { "label": "Scan",               "url": "/",        "iconClass": "nav-icon fas fa-tachometer-alt", "user_level": 0 },
+    { "label": "Tableau de Bord",               "url": "/",        "iconClass": "nav-icon fas fa-tachometer-alt", "user_level": 0 },
+    { "label": "Gestion",                        "url": "#",        "iconClass": "nav-icon fas fa-folder",         "user_level": 1,
+      "children": [
+        { "label": "Produits",                   "url": "/products", "iconClass": "far fa-circle nav-icon", "user_level": 1 },
+        { "label": "Utilisateurs (Admin)",       "url": "/users",    "iconClass": "far fa-circle nav-icon", "user_level": 2 },
+        { "label": "Utilisateur",                "url": "/users",    "iconClass": "far fa-circle nav-icon", "user_level": 2 }
+      ]
+    },
+    { "label": "Rapports (Manager)",            "url": "/reports",  "iconClass": "nav-icon fas fa-chart-line",    "user_level": 2 },
+    { "label": "Administration (Super Admin)",  "url": "/admin",    "iconClass": "nav-icon fas fa-user-shield",   "user_level": 3 }
+  ],
+
+  "sidebar_selects": [
+    {
+      "id": "marques",
+      "label": "Marques",
+      "session_key": "sidebar_marques",
+      "url_endpoint": "api/marques.php",
+      "method": "GET",
+      "value_key": "value",
+      "label_key": "label",
+      "csrf_param": "csrf",
+      "options": [
+        "Audi",
+        "Volkswagen",
+        "Volkswagen Utilitaire"
+      ],
+      "default_from_session": true
+    },
+    {
+      "id": "concessions",
+      "label": "Concessions",
+      "session_key": "sidebar_concessions",
+      "url_endpoint": "https://devnenad.fr/api/concessions.php",
+      "method": "GET",
+      "value_key": "value",
+      "label_key": "label",
+      "csrf_param": "csrf",
+      "options": [
+        "Groupe A — Paris",
+        "Groupe B — Lyon",
+        "Groupe C — Marseille"
+      ],
+      "default_from_session": true
+    }
+  ],
+
+  "base_css": [
+    "https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css",
+    "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css",
+    "https://cdn.jsdelivr.net/npm/overlayscrollbars@1.13.3/css/OverlayScrollbars.min.css",
+    "https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css",
+    "https://cdn.jsdelivr.net/npm/flag-icons@7.5.0/css/flag-icons.min.css",
+    "https://cdn.jsdelivr.net/npm/sweetalert2@11.22.2/dist/sweetalert2.min.css"
+  ],
+
+  "base_js_head": [
+    "https://code.jquery.com/jquery-3.6.0.min.js"
+  ],
+  "base_js_footer": [
+    "https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js",
+    "https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js",
+    "https://cdn.jsdelivr.net/npm/overlayscrollbars@1.13.3/js/jquery.overlayScrollbars.min.js",
+    "https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js",
+    "https://cdn.jsdelivr.net/npm/sweetalert2@11.12.4/dist/sweetalert2.all.min.js"
+  ],
+
+  "footer": {
+    "text": "Version 4.0.0 | Tous droits réservés.",
+    "copyright": "Copyright © 2023-2025 Nenad Petrovic."
+  }
+}
