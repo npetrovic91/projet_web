@@ -19,6 +19,7 @@ class StandardController extends BaseController
     public function index(): void
     {
         $this->requirePermission('standard.consulter');
+        $this->requireExportAllowed();
         $filters = [
             'q' => (string) $this->get('q', ''),
             'type' => (string) $this->get('type', ''),
@@ -98,6 +99,7 @@ class StandardController extends BaseController
     public function versions(): void
     {
         $this->requirePermission('standard.consulter');
+        $this->requireExportAllowed();
         $this->render('Standards/Views/versions', [
             'versions' => $this->service->versions(),
             'refs' => $this->service->refs(),
@@ -144,6 +146,7 @@ class StandardController extends BaseController
     public function exigences(): void
     {
         $this->requirePermission('standard.consulter');
+        $this->requireExportAllowed();
         $versionId = (int) $this->get('version_id', 0);
         $this->render('Standards/Views/exigences', [
             'exigences' => $this->service->exigences($versionId > 0 ? $versionId : null),
@@ -180,6 +183,7 @@ class StandardController extends BaseController
     public function evaluation(string $versionId): void
     {
         $this->requirePermission('standard.consulter');
+        $this->requireExportAllowed();
         $version = $this->service->version((int) $versionId);
         if (!$version) {
             $this->flash()->error('Version de standard introuvable.');
@@ -196,6 +200,7 @@ class StandardController extends BaseController
     public function exportJson(): never
     {
         $this->requirePermission('standard.consulter');
+        $this->requireExportAllowed();
         $this->json(true, $this->service->dashboard([]), 'Export Standards / versions / exigences.');
     }
 }

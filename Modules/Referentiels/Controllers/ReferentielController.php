@@ -19,6 +19,7 @@ class ReferentielController extends BaseController
     public function index(): void
     {
         $this->requirePermission('referentiels.read');
+        $this->requireExportAllowed();
         $this->render('Referentiels/Views/index', [
             'data' => $this->service->tableauDeBord(),
             'pageTitle' => 'Référentiels système',
@@ -28,6 +29,7 @@ class ReferentielController extends BaseController
     public function exportJson(): void
     {
         $this->requirePermission('referentiels.read');
+        $this->requireExportAllowed();
         $this->json(true, $this->service->export(), 'Export des référentiels système.');
     }
 
@@ -101,6 +103,7 @@ class ReferentielController extends BaseController
     private function liste(string $type, string $title): void
     {
         $this->requirePermission('referentiels.read');
+        $this->requireExportAllowed();
         $filters = [
             'q' => (string) $this->get('q', ''),
             'domaine' => (string) $this->get('domaine', ''),

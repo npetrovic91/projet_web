@@ -19,6 +19,7 @@ class VerrousController extends BaseController
     public function index(): void
     {
         $this->requirePermission('verrou.consulter');
+        $this->requireExportAllowed();
         $filters = $this->filters();
         $this->render('Verrous/Views/index', $this->service->dashboard($filters) + [
             'filters' => $filters,
@@ -58,6 +59,7 @@ class VerrousController extends BaseController
     public function sessions(): void
     {
         $this->requirePermission('verrou.consulter');
+        $this->requireExportAllowed();
         $filters = $this->filters();
         $this->render('Verrous/Views/sessions', [
             'sessions' => $this->service->sessions($filters),
@@ -80,6 +82,7 @@ class VerrousController extends BaseController
     public function contextes(): void
     {
         $this->requirePermission('verrou.consulter');
+        $this->requireExportAllowed();
         $filters = $this->filters();
         $this->render('Verrous/Views/contextes', [
             'contextes' => $this->service->contextes($filters),
@@ -92,6 +95,7 @@ class VerrousController extends BaseController
     public function maintenance(): void
     {
         $this->requirePermission('verrou.consulter');
+        $this->requireExportAllowed();
         $this->render('Verrous/Views/maintenance', [
             'maintenance' => $this->service->maintenance(),
             'pageTitle' => 'Verrous de maintenance',
@@ -101,6 +105,7 @@ class VerrousController extends BaseController
     public function exportJson(): never
     {
         $this->requirePermission('verrou.consulter');
+        $this->requireExportAllowed();
         $this->json(true, $this->service->export($this->filters()), 'Export verrous / sessions / contextes');
     }
 

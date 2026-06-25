@@ -78,6 +78,13 @@ class UserService implements ServiceInterface{
             }
             $relations['fonction_ids'] = $this->filtrerIdsParCatalogue($relations['fonction_ids'] ?? [], $this->model->fonctionsActives($societesGerables), 'fon_id');
             $relations['departement_ids'] = $this->filtrerIdsParCatalogue($relations['departement_ids'] ?? [], $this->model->departementsActifs($societesGerables), 'dep_id');
+            $departementsGerables = $this->departementsGerables($utilisateurAction);
+            if ($departementsGerables !== null) {
+                // ACC-004 : un chef_de_departement ne peut creer/affecter un
+                // utilisateur que dans son propre departement, pas n'importe
+                // quel departement de la societe qu'il gere par ailleurs.
+                $relations['departement_ids'] = array_values(array_intersect($relations['departement_ids'], $departementsGerables));
+            }
             $relations['service_ids'] = $this->filtrerIdsParCatalogue($relations['service_ids'] ?? [], $this->model->servicesActifs($societesGerables), 'srv_id');
             $relations['equipe_ids'] = $this->filtrerIdsParCatalogue($relations['equipe_ids'] ?? [], $this->model->equipesActives($societesGerables), 'equ_id');
             $relations['competence_assignments'] = $this->filtrerAssignmentsParCatalogue($relations['competence_assignments'] ?? [], $this->model->competencesActives($societesGerables), 'cmp_id');
@@ -306,6 +313,32 @@ class UserService implements ServiceInterface{
     private function societesGerables(int $utilisateurId): array
     {
         return $this->model->idsSocietesUtilisateur($utilisateurId);
+    }
+
+    /**
+     * Restreint les departements affectables aux seuls departements de
+     * l'acteur lorsqu'il est chef_de_departement (ACC-004 : "Un
+     * chef_departement ne peut creer qu'un utilisateur de role inferieur
+     * dans son propre departement."). Retourne null si l'acteur n'est pas
+     * chef_de_departement (pas de restriction supplementaire au-dela de
+     * societesGerables, deja appliquee ailleurs).
+     */
+    private function departementsGerables(int $utilisateurId): ?array
+    {
+        if ($this->estSuperAdminSession()) {
+            return null;
+        }
+
+        $roleCodes = array_map(
+            static fn($r): string => mb_strtolower(trim((string) $r)),
+            (array) ($_SESSION['user']['role_codes'] ?? $_SESSION['user_roles'] ?? $_SESSION['user']['roles'] ?? [])
+        );
+
+        if (!in_array('chef_de_departement', $roleCodes, true)) {
+            return null;
+        }
+
+        return array_map('intval', array_column($this->model->departementsUtilisateur($utilisateurId), 'udp_departement_id'));
     }
 
     private function rolesAttribuables(int $utilisateurId): array

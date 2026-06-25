@@ -19,6 +19,7 @@ class OrganisationController extends BaseController
     public function index(): void
     {
         $this->requirePermission('organisation.read');
+        $this->requireExportAllowed();
         $societeId = $this->selectedSocieteId();
         $this->render('Organisation/Views/index', [
             'pageTitle' => 'Organisation interne',
@@ -32,12 +33,14 @@ class OrganisationController extends BaseController
     public function exportJson(): void
     {
         $this->requirePermission('organisation.read');
+        $this->requireExportAllowed();
         $this->json(true, $this->service->export($this->selectedSocieteId()), 'Export de l’organisation interne.');
     }
 
     public function list(string $type): void
     {
         $this->requirePermission('organisation.read');
+        $this->requireExportAllowed();
         $type = $this->normaliserType($type);
         $filters = [
             'q' => trim((string)$this->get('q', '')),
@@ -124,6 +127,7 @@ class OrganisationController extends BaseController
     public function liaisons(): void
     {
         $this->requirePermission('organisation.read');
+        $this->requireExportAllowed();
         $societeId = $this->selectedSocieteId();
         $type = trim((string)$this->get('type', ''));
         $liaisonLabels = $this->service->liaisonLabels();

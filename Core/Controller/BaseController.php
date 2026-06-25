@@ -290,6 +290,41 @@ abstract class BaseController
 
 
     /**
+     * Interdit explicitement l'export de donnees aux roles operationnels
+     * (chef_equipe, technicien, visiteur), independamment des permissions
+     * generiques attribuees en base. Exigence du cahier des charges :
+     * "Les exports sont interdits aux chef_equipe, technicien et visiteur"
+     * — meme si un bouton d'export est affiche par erreur cote UI, le
+     * backend doit refuser.
+     *
+     * A appeler en complement de requirePermission(), jamais a la place.
+     */
+    protected function requireExportAllowed(): void
+    {
+        $this->requireAuth();
+
+        $rolesInterdits = [
+            'chef_d_equipe', 'chef_equipe', 'administrateur_equipe', 'admin_equipe',
+            'technicien', 'technicien_sav',
+            'visiteur',
+        ];
+
+        foreach ($rolesInterdits as $role) {
+            if (has_role($role)) {
+                if ($this->isAjax()) {
+                    $this->jsonError("Export interdit pour le role {$role}.", 403);
+                }
+                http_response_code(403);
+                $errorView = SRC_PATH . '/Core/Theme/Views/errors/403.php';
+                file_exists($errorView)
+                    ? include $errorView
+                    : print('<h1>403 &mdash; Export interdit pour ce role</h1>');
+                exit;
+            }
+        }
+    }
+
+    /**
      * Retourne l'identifiant de l'operateur courant pour l'audit.
      * Alias centralise afin d'eviter les appels orphelins dans les modules.
      */

@@ -19,6 +19,7 @@ class HorairesController extends BaseController
     public function index(): void
     {
         $this->requirePermission('horaire.consulter');
+        $this->requireExportAllowed();
         $filters = $this->filters();
         $this->render('Horaires/Views/index', $this->service->dashboard($filters) + [
             'filters' => $filters,
@@ -30,6 +31,7 @@ class HorairesController extends BaseController
     public function calendrier(): void
     {
         $this->requirePermission('horaire.consulter');
+        $this->requireExportAllowed();
         $filters = $this->filters();
         $this->render('Horaires/Views/calendrier', [
             'groupes' => $this->service->calendrier($filters),
@@ -105,6 +107,7 @@ class HorairesController extends BaseController
     public function exceptions(): void
     {
         $this->requirePermission('horaire.consulter');
+        $this->requireExportAllowed();
         $filters = $this->filters();
         $this->render('Horaires/Views/exceptions', [
             'exceptions' => $this->service->exceptions($filters),
@@ -181,6 +184,7 @@ class HorairesController extends BaseController
     public function exportJson(): never
     {
         $this->requirePermission('horaire.consulter');
+        $this->requireExportAllowed();
         $this->json(true, $this->service->export($this->filters()), 'Export horaires et exceptions');
     }
 

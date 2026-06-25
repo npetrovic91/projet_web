@@ -19,6 +19,7 @@ class RelationSocieteController extends BaseController
     public function index(): void
     {
         $this->requirePermission('relations_societes.read');
+        $this->requireExportAllowed();
         $filters = [
             'q' => trim((string)$this->get('q', '')),
             'societe_id' => (int)$this->get('societe_id', $this->activeCompanyId() ?? 0) ?: null,
@@ -40,6 +41,7 @@ class RelationSocieteController extends BaseController
     public function exportJson(): void
     {
         $this->requirePermission('relations_societes.read');
+        $this->requireExportAllowed();
         $societeId = (int)$this->get('societe_id', $this->activeCompanyId() ?? 0) ?: null;
         $this->json(true, $this->service->export($societeId), 'Export des relations sociétés.');
     }
@@ -84,6 +86,7 @@ class RelationSocieteController extends BaseController
     public function types(): void
     {
         $this->requirePermission('relations_societes.read');
+        $this->requireExportAllowed();
         $filters = ['q' => trim((string)$this->get('q', ''))];
         $this->render('Relations/Views/types', [
             'pageTitle' => 'Types de relations sociétés',
@@ -132,6 +135,7 @@ class RelationSocieteController extends BaseController
     public function representations(): void
     {
         $this->requirePermission('relations_societes.read');
+        $this->requireExportAllowed();
         $filters = [
             'societe_id' => (int)$this->get('societe_id', $this->activeCompanyId() ?? 0) ?: null,
             'concession_id' => (int)$this->get('concession_id', 0) ?: null,

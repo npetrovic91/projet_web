@@ -19,6 +19,7 @@ class ValidationController extends BaseController
     public function index(): void
     {
         $this->requirePermission('validation.consulter');
+        $this->requireExportAllowed();
         $filters = [
             'q' => (string) $this->get('q', ''),
             'societe_id' => (int) $this->get('societe_id', 0),
@@ -60,6 +61,7 @@ class ValidationController extends BaseController
     public function show(string $id): void
     {
         $this->requirePermission('validation.consulter');
+        $this->requireExportAllowed();
         $demande = $this->service->demande((int) $id);
         if (!$demande) {
             $this->flash()->error('Demande introuvable.');
@@ -102,6 +104,7 @@ class ValidationController extends BaseController
     public function rules(): void
     {
         $this->requirePermission('validation.consulter');
+        $this->requireExportAllowed();
         $filters = [
             'q' => (string) $this->get('q', ''),
             'societe_id' => (int) $this->get('societe_id', 0),
@@ -182,6 +185,7 @@ class ValidationController extends BaseController
     public function exportJson(): never
     {
         $this->requirePermission('validation.consulter');
+        $this->requireExportAllowed();
         $this->json(true, $this->service->export(), 'Export validations');
     }
 }
