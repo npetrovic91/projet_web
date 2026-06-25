@@ -85,12 +85,12 @@ final class GlobalSearchService implements ServiceInterface{
 
     private function searchCompanies(string $like, array $companyIds, bool $isSuperAdmin, int $limit): array
     {
-        if (!$isSuperAdmin && empty($companyIds)) return [];
+        if (!$isSuperAdmin && $companyIds === []) return [];
 
         $where  = "s.soc_supprime_le IS NULL AND (s.soc_nom LIKE :q1 OR s.soc_nom_court LIKE :q2 OR s.soc_code LIKE :q3)";
         $params = [':q1' => $like, ':q2' => $like, ':q3' => $like];
 
-        if (!$isSuperAdmin && !empty($companyIds)) {
+        if (!$isSuperAdmin && $companyIds !== []) {
             $ph = [];
             foreach ($companyIds as $i => $id) {
                 $ph[] = ':sc' . $i;

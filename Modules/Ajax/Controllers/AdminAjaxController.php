@@ -10,7 +10,7 @@ class AdminAjaxController extends AjaxController
     public function stats(): void
     {
         $this->requireAjaxRole([ROLE_SUPERADMIN, 'ADMIN_SECURITE']);
-        $db = database();
+        $db = db();
         AjaxResponseService::success('Statistiques chargées.', [
             'login_attempts_24h' => (int) ($db->fetch("SELECT COUNT(*) AS cnt FROM sav_tentatives_connexion WHERE tcn_cree_le >= DATE_SUB(NOW(), INTERVAL 24 HOUR)")['cnt'] ?? 0),
             'blocked_ips' => (int) ($db->fetch("SELECT COUNT(*) AS cnt FROM sav_blocages_securite WHERE bse_adresse_ip IS NOT NULL AND bse_supprime_le IS NULL AND (bse_termine_le IS NULL OR bse_termine_le > NOW())")['cnt'] ?? 0),
@@ -22,7 +22,7 @@ class AdminAjaxController extends AjaxController
     {
         $this->requireAjaxRole([ROLE_SUPERADMIN, 'ADMIN_SECURITE']);
         AjaxResponseService::success('Tentatives chargées.', [
-            'items' => database()->fetchAll(
+            'items' => db()->fetchAll(
                 "SELECT tcn_id AS id,
                         COALESCE(INET6_NTOA(tcn_adresse_ip), '') AS ip,
                         COALESCE(tcn_email_tente, tcn_email_normalise, '') AS email,
@@ -41,7 +41,7 @@ class AdminAjaxController extends AjaxController
     {
         $this->requireAjaxRole([ROLE_SUPERADMIN, 'ADMIN_SECURITE']);
         AjaxResponseService::success('IP bloquées chargées.', [
-            'items' => database()->fetchAll(
+            'items' => db()->fetchAll(
                 "SELECT bse_id AS id,
                         COALESCE(INET6_NTOA(bse_adresse_ip), '') AS ip,
                         bse_raison AS reason,
@@ -62,7 +62,7 @@ class AdminAjaxController extends AjaxController
     {
         $this->requireAjaxRole([ROLE_SUPERADMIN, 'ADMIN_SECURITE']);
         AjaxResponseService::success('Comptes verrouillés chargés.', [
-            'items' => database()->fetchAll(
+            'items' => db()->fetchAll(
                 "SELECT uti_id AS id,
                         uti_email AS email,
                         uti_motif_verrouillage AS reason,

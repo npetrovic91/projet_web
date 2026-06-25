@@ -21,7 +21,7 @@ class NotificationTemplateModel extends BaseModel
         );
     }
 
-    public function findById(int $id): ?array
+    public function findById(int $id, string $pkColumn = 'id'): ?array
     {
         if ($id <= 0) {
             return null;

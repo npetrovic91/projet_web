@@ -333,11 +333,6 @@ class UserController extends BaseController
         $this->redirect('/users/' . $utiId . '#parc-sav');
     }
 
-    private function isAjax(): bool
-    {
-        return ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'XMLHttpRequest';
-    }
-
     private function moduleNonAligne(string $id, string $libelle): void
     {
         $this->requirePermission('utilisateur.modifier');

@@ -74,7 +74,7 @@ class EmailService implements ServiceInterface{
         return [
             'success' => $sent,
             'log_id' => $logId,
-            'message' => $sent ? 'Email envoyé.' : 'Email journalisé en échec : ' . ($error ?? 'erreur inconnue'),
+            'message' => $sent ? 'Email envoyé.' : 'Email journalisé en échec : ' . $error,
         ];
     }
 

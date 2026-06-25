@@ -412,15 +412,6 @@ class ValidationModel extends BaseModel
         return $text;
     }
 
-    private function statusId(string $domain, string $code): ?int
-    {
-        $id = $this->db->fetchColumn(
-            "SELECT sta_id FROM sav_statuts WHERE sta_domaine = :domain AND sta_code = :code AND sta_supprime_le IS NULL LIMIT 1",
-            ['domain' => $domain, 'code' => $code]
-        );
-        return $id ? (int) $id : null;
-    }
-
     private function audit(?int $userId, string $action, string $table, int $targetId, ?string $reason = null): void
     {
         $this->db->execute(

@@ -133,45 +133,4 @@ class ContextController extends AjaxController
         $_SESSION['security']['roles_loaded_at'] = date('c');
         $_SESSION['security']['permissions_loaded_at'] = date('c');
     }
-
-    private function roleCodes(array $roles): array
-    {
-        $codes = [];
-        foreach ($roles as $role) {
-            $code = trim((string) ($role['rol_code'] ?? ''));
-            if ($code !== '') {
-                $codes[] = $code;
-            }
-        }
-        return array_values(array_unique($codes));
-    }
-
-    private function isSuperAdmin(array $roleCodes): bool
-    {
-        return in_array('super_administrateur', $roleCodes, true)
-            || in_array('super_admin', $roleCodes, true)
-            || (defined('ROLE_SUPERADMIN') && in_array((string) ROLE_SUPERADMIN, $roleCodes, true));
-    }
-
-    private function applicationLevel(array $roleCodes): int
-    {
-        if ($this->isSuperAdmin($roleCodes)) {
-            return 100;
-        }
-        foreach ($roleCodes as $roleCode) {
-            if (in_array($roleCode, ['administrateur_general_societe', 'administrateur_general', 'admin_general'], true)) {
-                return 90;
-            }
-            if (in_array($roleCode, ['responsable_groupe_concessions', 'administrateur_departement', 'admin_departement'], true)) {
-                return 80;
-            }
-            if (in_array($roleCode, ['directeur_concession', 'responsable_apres_vente', 'responsable_garantie', 'administrateur_service', 'admin_service'], true)) {
-                return 70;
-            }
-            if (in_array($roleCode, ['administrateur_equipe', 'admin_equipe', 'manager'], true)) {
-                return 60;
-            }
-        }
-        return 10;
-    }
 }

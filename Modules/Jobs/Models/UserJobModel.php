@@ -104,14 +104,4 @@ class UserJobModel extends BaseModel
             }
         });
     }
-
-    private function statusId(string $domain, string $code): ?int
-    {
-        $id = $this->db->fetchColumn(
-            'SELECT sta_id FROM sav_statuts
-             WHERE sta_domaine = :domain AND sta_code = :code AND sta_supprime_le IS NULL LIMIT 1',
-            ['domain' => $domain, 'code' => $code]
-        );
-        return $id !== false && $id !== null ? (int) $id : null;
-    }
 }

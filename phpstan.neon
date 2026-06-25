@@ -1,0 +1,22 @@
+includes:
+    - phpstan-baseline.neon
+
+parameters:
+    level: 5
+    bootstrapFiles:
+        - phpstan-bootstrap.php
+    paths:
+        - Core
+        - Modules
+        - config
+        - bin
+        - scripts
+    excludePaths:
+        - Modules/AutoTests/*
+        - */Views/autotest.php
+        # Les vues recoivent leurs variables par extract() dynamique dans
+        # Core/View/BaseView::captureView() : PHPStan ne peut pas le tracer
+        # statiquement (faux positifs systematiques "variable might not be
+        # defined"). La syntaxe de ces fichiers reste verifiee par `php -l`
+        # dans la CI (.github/workflows/ci.yml).
+        - */Views/*.php

@@ -154,6 +154,30 @@ class BrandModel extends BaseModel
         );
     }
 
+    /**
+     * Marques représentées par une société (concession).
+     *
+     * Corrige le 2026-06-25 : BrandService::getForCompany() et
+     * CompaniesAjaxController::brandsForCompany() appelaient cette
+     * méthode alors qu'elle n'existait pas (détecté par PHPStan niveau 5,
+     * "Call to an undefined method") — ces deux points d'entrée
+     * plantaient au premier appel.
+     */
+    public function getBrandsForCompany(int $companyId): array
+    {
+        return $this->db()->fetchAll(
+            "SELECT s.soc_id, s.soc_nom, s.soc_code, r.rma_est_principale, r.rma_debute_le
+               FROM sav_representations_marques_societes r
+               INNER JOIN sav_societes s ON s.soc_id = r.rma_marque_societe_id
+              WHERE r.rma_concession_societe_id = :company_id
+                AND r.rma_supprime_le IS NULL
+                AND r.rma_archive_le IS NULL
+                AND s.soc_supprime_le IS NULL
+              ORDER BY r.rma_est_principale DESC, s.soc_nom ASC",
+            ['company_id' => $companyId]
+        );
+    }
+
     public function attachToCompany(int $companyId, int $brandId, int $userId, bool $primary = false): bool
     {
         $existing = $this->db()->fetch(

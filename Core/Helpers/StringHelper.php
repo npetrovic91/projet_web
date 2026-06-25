@@ -12,8 +12,8 @@ class StringHelper
 
     public static function slug(string $str): string
     {
-        $str = transliterator_transliterate('Any-Latin; Latin-ASCII; Lower()', $str);
-        $str = preg_replace('/[^a-z0-9]+/', '-', $str ?? '');
+        $str = transliterator_transliterate('Any-Latin; Latin-ASCII; Lower()', $str) ?: '';
+        $str = preg_replace('/[^a-z0-9]+/', '-', $str);
         return trim($str ?? '', '-');
     }
 

@@ -512,11 +512,6 @@ class SocieteController extends BaseController
         $this->redirect('/companies/' . $socId . '#parc-sav');
     }
 
-    private function isAjax(): bool
-    {
-        return ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'XMLHttpRequest';
-    }
-
     private function idUtilisateurCourant(): int
     {
         return (int) ($_SESSION['user']['id'] ?? $_SESSION['user_id'] ?? 0);

@@ -25,11 +25,13 @@
     "monolog/monolog": "^3.9"
   },
   "require-dev": {
-    "phpunit/phpunit": "^10.0"
+    "phpunit/phpunit": "^10.0",
+    "phpstan/phpstan": "^1.10"
   },
   "minimum-stability": "stable",
   "scripts": {
     "test": "php bin/run_tests.php",
+    "stan": "phpstan analyse --memory-limit=1G",
     "autosav:migrate": "php bin/migrate.php",
     "autosav:preflight": "php bin/production_preflight.php",
     "autosav:backup": "php bin/backup_database.php",
