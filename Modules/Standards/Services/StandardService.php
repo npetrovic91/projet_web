@@ -6,6 +6,7 @@ namespace Nenad\Autosav\Modules\Standards\Services;
 use Nenad\Autosav\Core\Services\Contracts\ServiceInterface;
 
 use Nenad\Autosav\Core\Security\Class\RoleResolver;
+use Nenad\Autosav\Modules\Notifications\Services\ActionNotifier;
 use Nenad\Autosav\Modules\Standards\Models\StandardModel;
 
 class StandardService implements ServiceInterface{
@@ -16,9 +17,12 @@ class StandardService implements ServiceInterface{
      */
     private const NIVEAU_CHEF_DEPARTEMENT = 70;
 
-    public function __construct(private ?StandardModel $model = null)
+    private ActionNotifier $notifier;
+
+    public function __construct(private ?StandardModel $model = null, ?ActionNotifier $notifier = null)
     {
         $this->model ??= new StandardModel();
+        $this->notifier = $notifier ?? new ActionNotifier();
     }
 
     public function dashboard(array $filters = []): array
@@ -85,6 +89,15 @@ class StandardService implements ServiceInterface{
         }
 
         $ok = $this->model->validerVersion($id, $userId);
+        if ($ok) {
+            $this->notifier->notifierUtilisateur(
+                (int) $version['vst_cree_par_utilisateur_id'],
+                'standard.version_validee',
+                'Standard validé',
+                sprintf('Votre version %s du standard %s a été validée et est désormais applicable.', $version['vst_version'], $version['std_nom'] ?? ''),
+                createdBy: $userId
+            );
+        }
         return $ok
             ? ['success' => true, 'errors' => []]
             : ['success' => false, 'errors' => ['Cette version n\'est pas en attente de validation.']];
@@ -107,6 +120,15 @@ class StandardService implements ServiceInterface{
         }
 
         $ok = $this->model->rejeterVersion($id, $userId, $motif);
+        if ($ok) {
+            $this->notifier->notifierUtilisateur(
+                (int) $version['vst_cree_par_utilisateur_id'],
+                'standard.version_rejetee',
+                'Standard rejeté',
+                sprintf('Votre version %s du standard %s a été rejetée. Motif : %s', $version['vst_version'], $version['std_nom'] ?? '', $motif),
+                createdBy: $userId
+            );
+        }
         return $ok
             ? ['success' => true, 'errors' => []]
             : ['success' => false, 'errors' => ['Cette version n\'est pas en attente de validation.']];

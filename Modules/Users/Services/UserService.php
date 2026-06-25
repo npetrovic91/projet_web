@@ -7,15 +7,19 @@ use Nenad\Autosav\Core\Services\Contracts\ServiceInterface;
 
 use Nenad\Autosav\Core\Security\Class\PasswordManager;
 use Nenad\Autosav\Core\Security\Class\RoleResolver;
+use Nenad\Autosav\Modules\Notifications\Services\ActionNotifier;
 use Nenad\Autosav\Modules\Users\Models\UserModel;
 
 /**
  * Service Users aligné sur le modèle SQL français.
  */
 class UserService implements ServiceInterface{
-    public function __construct(private ?UserModel $model = null)
+    private ActionNotifier $notifier;
+
+    public function __construct(private ?UserModel $model = null, ?ActionNotifier $notifier = null)
     {
         $this->model ??= new UserModel();
+        $this->notifier = $notifier ?? new ActionNotifier();
     }
 
     public function lister(array $filtres, int $utilisateurCourantId, int $page = 1, int $parPage = 25): array
@@ -108,8 +112,40 @@ class UserService implements ServiceInterface{
         if (($normalise['compte']['uti_mot_de_passe_hash'] ?? null) === null) {
             unset($normalise['compte']['uti_mot_de_passe_hash'], $normalise['compte']['uti_doit_changer_mot_de_passe']);
         }
+
+        $rolesAvant = array_map('intval', array_column($this->model->rolesUtilisateur($id), 'rcu_role_id'));
+
         $this->model->modifier($id, $normalise['compte'], $normalise['profil'], $normalise['donnees_sensibles'], $relations);
+
+        $rolesApres = (array) ($relations['role_ids'] ?? []);
+        if (array_diff($rolesAvant, $rolesApres) !== [] || array_diff($rolesApres, $rolesAvant) !== []) {
+            $this->notifierChangementRole($id, $utilisateurAction);
+        }
+
         return ['success' => true, 'id' => $id, 'errors' => [], 'erreurs' => []];
+    }
+
+    /**
+     * Notifie l'utilisateur concerné d'un changement de rôle (in-app +
+     * email). Action explicitement désignée comme devant déclencher un
+     * email, indépendamment des permissions de l'acteur qui modifie.
+     */
+    private function notifierChangementRole(int $userId, int $utilisateurAction): void
+    {
+        $fiche = $this->model->ficheComplete($userId);
+        $email = (string) ($fiche['user']['use_email'] ?? $fiche['user']['uti_email'] ?? '');
+        if ($email === '') {
+            return;
+        }
+
+        $this->notifier->notifierUtilisateurAvecEmail(
+            $userId,
+            $email,
+            'utilisateur.role_modifie',
+            'Vos rôles ont été modifiés',
+            'Les rôles attribués à votre compte AutoSAV viennent d\'être modifiés par un administrateur. Reconnectez-vous pour voir vos nouveaux accès.',
+            createdBy: $utilisateurAction
+        );
     }
 
     public function desactiver(int $id, int $utilisateurAction): bool

@@ -5,6 +5,7 @@ namespace Nenad\Autosav\Modules\Profile\Services;
 
 use Nenad\Autosav\Core\Services\Contracts\ServiceInterface;
 
+use Nenad\Autosav\Modules\Notifications\Services\ActionNotifier;
 use Nenad\Autosav\Modules\Profile\Models\GdprRequestModel;
 use Nenad\Autosav\Modules\Qualifications\Services\QualificationService;
 use Nenad\Autosav\Modules\Skills\Services\SkillService;
@@ -12,13 +13,18 @@ use Nenad\Autosav\Modules\Users\Models\UserModel;
 use Nenad\Autosav\Modules\Users\Services\UserCompanyService;
 
 class ProfileService implements ServiceInterface{
+    private ActionNotifier $notifier;
+
     public function __construct(
         private UserModel $users,
         private UserCompanyService $companies,
         private SkillService $skills,
         private QualificationService $qualifications,
-        private GdprRequestModel $gdprRequests
-    ) {}
+        private GdprRequestModel $gdprRequests,
+        ?ActionNotifier $notifier = null
+    ) {
+        $this->notifier = $notifier ?? new ActionNotifier();
+    }
 
     public function getProfile(int $userId): ?array
     {
@@ -118,6 +124,17 @@ class ProfileService implements ServiceInterface{
 
         $this->users->updatePassword($userId, password_hash($newPassword, defined('HASH_ALGO') ? HASH_ALGO : PASSWORD_ARGON2ID));
         logger('security')->info('profile_password_changed', ['user_id' => $userId]);
+
+        $email = (string) ($user['use_email'] ?? '');
+        $this->notifier->notifierUtilisateurAvecEmail(
+            $userId,
+            $email,
+            'securite.mot_de_passe_modifie',
+            'Mot de passe modifié',
+            'Votre mot de passe AutoSAV vient d\'être modifié. Si vous n\'êtes pas à l\'origine de ce changement, contactez immédiatement un administrateur.',
+            createdBy: $userId
+        );
+
         return ['success' => true, 'errors' => []];
     }
 

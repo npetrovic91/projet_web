@@ -111,7 +111,49 @@ final class SuperAdminAccessGuard
             'motif' => $motif,
         ];
 
+        self::notifierAdministrateursSociete($societeId, $motif, $justification, $utilisateurId);
+
         return $logId;
+    }
+
+    /**
+     * Transparence vis-à-vis du client : les administrateurs de la
+     * société dont les données sont consultées sont notifiés in-app de
+     * cet accès justifié (qui, pourquoi), pas seulement le journal
+     * interne sav_acces_donnees_superadmin.
+     */
+    private static function notifierAdministrateursSociete(int $societeId, string $motif, string $justification, int $superAdminId): void
+    {
+        try {
+            $db = Database::getInstance();
+            $admins = $db->fetchAll(
+                "SELECT DISTINCT rcu.rcu_utilisateur_id
+                   FROM sav_roles_contextuels_utilisateurs rcu
+                   INNER JOIN sav_roles r ON r.rol_id = rcu.rcu_role_id
+                  WHERE rcu.rcu_societe_id = :societe_id
+                    AND rcu.rcu_supprime_le IS NULL
+                    AND LOWER(r.rol_code) IN ('administrateur_general_societe', 'pdg')",
+                ['societe_id' => $societeId]
+            );
+
+            if ($admins === []) {
+                return;
+            }
+
+            $notifier = new \Nenad\Autosav\Modules\Notifications\Services\ActionNotifier();
+            foreach ($admins as $admin) {
+                $notifier->notifierUtilisateur(
+                    (int) $admin['rcu_utilisateur_id'],
+                    'superadmin.acces_justifie',
+                    'Accès support/audit de la plateforme',
+                    sprintf('Un administrateur technique de la plateforme a consulté les données de votre société (motif : %s). Justification : %s', $motif, $justification),
+                    companyId: $societeId,
+                    createdBy: $superAdminId
+                );
+            }
+        } catch (\Throwable) {
+            // La notification de transparence ne doit jamais bloquer l'acces justifie lui-meme.
+        }
     }
 
     /**
