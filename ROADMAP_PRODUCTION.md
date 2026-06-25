@@ -26,14 +26,20 @@ Légende sévérité : 🔴 Critique (bloquant production) · 🟡 Majeur (à co
 
 **Limite à connaître** : `bin/migrate.php` et les 5 migrations reconstituées n'ont pas pu être testés contre une vraie connexion MariaDB depuis cet environnement (pas d'accès réseau à la base de prod). Le SQL a été construit à partir du schéma réel et des données déjà présentes dans le dump, et toutes les requêtes sont idempotentes (`INSERT IGNORE` / `WHERE NOT EXISTS` / `ON DUPLICATE KEY UPDATE`), mais une vérification sur une copie de la base avant exécution en production reste recommandée : `php bin/migrate.php --dry-run` puis `php bin/migrate.php` sur un environnement de test d'abord.
 
-## 2. Majeurs (🟡) — à traiter avant une ouverture commerciale
+## 2. Majeurs (🟡)
 
-| # | Sujet | Constat | Action |
+| # | Sujet | Constat | Statut |
 |---|---|---|---|
-| 2.1 | **2FA non branchée** | Le champ DB existe, mais `AuthService` retourne toujours `requires_2fa => false`. | Implémenter l'activation/vérification TOTP, au moins pour les rôles `super_admin`, `pdg`, `directeur_groupe`. |
-| 2.2 | **Concession sans `importateur_id` obligatoire** | Le cahier des charges l'impose ("chaque concession doit avoir un importateur_id obligatoire"), mais aucun contrôle dans `Modules/Society` ni `Modules/Organisation` ne l'empêche. Les concessions démo existantes (Auto Avenue Paris, etc.) n'ont d'ailleurs pas ce lien. | Ajouter la contrainte applicative à la création/modification d'une concession (Service de validation), puis backfill les concessions démo existantes. |
-| 2.3 | **Pas d'outillage qualité de code** | Ni PHPStan/Psalm ni PHPCS configurés. Rien n'empêche une régression silencieuse de type erreur de typage. | Ajouter PHPStan niveau 5+ a minima sur `Core/`, intégré à la CI du 1.2. |
-| 2.4 | **Gestion d'erreurs à 3 vitesses** | Mélange d'exceptions catchées, de retours `['success' => bool, ...]`, et de `null`/`false` silencieux selon le Service — rend le comportement imprévisible pour un nouveau développeur et masque des erreurs en prod. | Converger vers un seul contrat (recommandé : retour `['success' => bool, 'message' => ..., 'errors' => ...]` partout, exceptions réservées aux erreurs système/infra). |
+| 2.0a | **Contrainte importateur_id sur les concessions** | Le cahier des charges l'impose, aucun formulaire/validation ne l'appliquait. | ✅ Traité le 2026-06-25 : champ formulaire + validation backend + relation `sav_relations_societes` (`ConcessionImportateurConstraintTest`). |
+| 2.0b | **Accès justifié super_admin (ACC-007)** | `Modules/SuperAdmin` ne faisait que du reporting, aucun flux de justification. | ✅ Traité : `SuperAdminAccessGuard`, table `sav_acces_donnees_superadmin`, formulaire de justification obligatoire (`SuperAdminJustificationTest`). |
+| 2.0c | **Workflow de validation des standards (ACC-008)** | Une version de standard était immédiatement active, sans brouillon ni validation par un tiers. | ✅ Traité : états draft/pending_validation/approved/rejected, auto-validation interdite, niveau supérieur exigé (`StandardValidationWorkflowTest`). |
+| 2.0d | **Propagation groupe → concessions (ACC-009)** | Table `sav_bulk_actions` absente du schéma réel, aucune implémentation. | ✅ Traité : `GroupPropagationService` (preview/confirmation/rollback génériques sur rôles/fonctions/compétences/certifications) (`GroupPropagationTest`). |
+| 2.0e | **Historique société non abonnée (ACC-001)** | Créer l'abonnement et l'espace applicatif étaient deux actions manuelles séparées, sans preuve de conservation d'historique. | ✅ Traité : souscription atomique (transaction) + compteurs d'historique affichés (`SubscriptionHistoryPreservationTest`). |
+| 2.1 | **2FA non branchée** | Le champ DB existe, mais `AuthService` retourne toujours `requires_2fa => false`. | ⏸️ Reporté à la demande explicite de l'utilisateur (« 2FA ne sera pas utilisée au début »). Pas de travail effectué. |
+| 2.2 | **Pas d'outillage qualité de code** | Ni PHPStan/Psalm ni PHPCS configurés. Rien n'empêche une régression silencieuse de type erreur de typage. | 🔜 Prochain chantier en cours. |
+| 2.3 | **Gestion d'erreurs à 3 vitesses** | Mélange d'exceptions catchées, de retours `['success' => bool, ...]`, et de `null`/`false` silencieux selon le Service — rend le comportement imprévisible pour un nouveau développeur et masque des erreurs en prod. | 🔜 À traiter après PHPStan. |
+| 2.4 | **Notifications in-app + audit pour chaque action utilisateur** | Pas de système de notification in-app généralisé. | 🔜 À traiter. |
+| 2.5 | **Emails PHPMailer fonctionnels (existants + nouveaux déclencheurs)** | EmailService déclaré mais pas vérifié end-to-end ; pas de nouveaux déclencheurs (changement mot de passe, changement de rôle...). | 🔜 À traiter. |
 
 ## 3. Moyens / mineurs (🟠⚪) — amélioration continue
 
