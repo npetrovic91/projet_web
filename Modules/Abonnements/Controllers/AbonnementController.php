@@ -35,6 +35,55 @@ class AbonnementController extends BaseController
         ]);
     }
 
+    /**
+     * Cahier des charges (ACC-001) : souscription en une étape (abonnement
+     * + espace applicatif) pour une société non abonnée, avec affichage de
+     * l'historique conservé (relations, contacts, emails reçus) comme
+     * preuve qu'aucune donnée n'est perdue.
+     */
+    public function souscrireForm(): void
+    {
+        $this->requirePermission('abonnements.manage');
+        $societeId = (int) $this->get('societe_id', 0);
+        if ($societeId <= 0) {
+            $this->flash()->error('Société invalide.');
+            $this->redirect('/abonnements');
+        }
+        $this->render('Abonnements/Views/souscrire', [
+            'pageTitle' => 'Souscrire un abonnement',
+            'societeId' => $societeId,
+            'historique' => $this->service->historiqueConserve($societeId),
+            'refs' => $this->service->references(),
+            'csrf_token' => $this->csrfToken(),
+        ]);
+    }
+
+    public function souscrire(): void
+    {
+        $this->requirePermission('abonnements.manage');
+        $this->validateCsrf();
+
+        $societeId = (int) $this->request->post('societe_id', 0);
+        $formuleId = (int) $this->request->post('fab_formule_id', 0);
+        if ($societeId <= 0 || $formuleId <= 0) {
+            $this->flash()->error('Société et formule sont obligatoires.');
+            $this->redirect('/abonnements/souscrire?societe_id=' . $societeId);
+        }
+
+        try {
+            $resultat = $this->service->souscrireSociete($societeId, $formuleId, $this->userId(), client_ip());
+            $this->flash()->success(sprintf(
+                'Société abonnée. Historique conservé : %d relation(s), %d contact(s), %d email(s) reçu(s).',
+                $resultat['historique']['relations'],
+                $resultat['historique']['contacts'],
+                $resultat['historique']['emails_recus']
+            ));
+        } catch (\Throwable $e) {
+            $this->flash()->error('Souscription impossible : ' . $e->getMessage());
+        }
+        $this->redirect('/abonnements');
+    }
+
     public function exportJson(): void
     {
         $this->requirePermission('abonnements.read');

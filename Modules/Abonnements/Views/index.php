@@ -4,6 +4,18 @@
     <div><h1 class="h3 mb-0">Abonnements sociétés</h1><p class="text-muted mb-0">Séparation entre société enregistrée, société abonnée, espace applicatif actif et modules activés.</p></div>
     <div class="btn-group"><a class="btn btn-primary" href="<?= url('/abonnements/create') ?>">Nouvel abonnement</a><a class="btn btn-outline-secondary" href="<?= url('/abonnements/formules') ?>">Formules</a><a class="btn btn-outline-secondary" href="<?= url('/abonnements/espaces') ?>">Espaces</a><a class="btn btn-outline-secondary" href="<?= url('/abonnements/modules-societes') ?>">Modules sociétés</a></div>
   </div>
+  <form method="get" action="<?= url('/abonnements/souscrire') ?>" class="card card-body mb-3">
+    <label class="form-label">Souscrire l'abonnement d'une société non abonnée (conserve son historique)</label>
+    <div class="input-group">
+      <select class="form-select" name="societe_id" required>
+        <option value="">Sélectionner une société</option>
+        <?php foreach (($refs['societes'] ?? []) as $s): ?>
+          <option value="<?= (int) $s['soc_id'] ?>"><?= $h($s['soc_nom']) ?></option>
+        <?php endforeach; ?>
+      </select>
+      <button class="btn btn-success" type="submit">Souscrire</button>
+    </div>
+  </form>
   <div class="row g-3 mb-3">
     <?php foreach ([['Abonnements', 'abonnements_total'], ['Sociétés abonnées', 'societes_abonnees'], ['Actifs', 'abonnements_actifs'], ['Espaces actifs', 'espaces_actifs'], ['Modules sociétés', 'modules_societes_total']] as [$label,$key]): ?>
       <div class="col-md"><div class="card card-body"><div class="text-muted small"><?= $h($label) ?></div><div class="fs-4 fw-bold"><?= (int)($stats[$key] ?? 0) ?></div></div></div>

@@ -652,6 +652,8 @@ return [
     'GET /abonnements/export.json'                          => ['Abonnements\Controllers\AbonnementController', 'exportJson',            ['auth', 'maintenance']],
     'GET /abonnements/create'                               => ['Abonnements\Controllers\AbonnementController', 'create',                ['auth', 'maintenance']],
     'POST /abonnements/store'                               => ['Abonnements\Controllers\AbonnementController', 'store',                 ['auth', 'maintenance', 'csrf']],
+    'GET /abonnements/souscrire'                            => ['Abonnements\Controllers\AbonnementController', 'souscrireForm',         ['auth', 'maintenance']],
+    'POST /abonnements/souscrire'                           => ['Abonnements\Controllers\AbonnementController', 'souscrire',             ['auth', 'maintenance', 'csrf']],
     'GET /abonnements/{id}/edit'                            => ['Abonnements\Controllers\AbonnementController', 'edit',                  ['auth', 'maintenance']],
     'POST /abonnements/{id}/update'                         => ['Abonnements\Controllers\AbonnementController', 'update',                ['auth', 'maintenance', 'csrf']],
     'POST /abonnements/{id}/delete'                         => ['Abonnements\Controllers\AbonnementController', 'delete',                ['auth', 'maintenance', 'csrf']],

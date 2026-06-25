@@ -49,6 +49,34 @@ class AbonnementService implements ServiceInterface{
         return $savedId;
     }
 
+    /**
+     * Cahier des charges (ACC-001) : fait passer une société non abonnée
+     * à abonnée en une seule opération (abonnement + espace applicatif),
+     * sans toucher à son historique préexistant (relations, contacts,
+     * emails reçus, conservés via soc_id quel que soit le statut
+     * d'abonnement).
+     */
+    public function souscrireSociete(int $societeId, int $formuleId, ?int $userId, ?string $ip): array
+    {
+        $historiqueAvant = $this->model->historiqueConserve($societeId);
+        $espaceId = $this->model->souscrireSociete($societeId, $formuleId, $userId);
+        $historiqueApres = $this->model->historiqueConserve($societeId);
+
+        $this->model->audit('societe.souscrire', 'sav_espaces_applicatifs', $espaceId, $userId, $ip, [
+            'societe_id' => $societeId,
+            'formule_id' => $formuleId,
+            'historique_avant' => $historiqueAvant,
+            'historique_apres' => $historiqueApres,
+        ]);
+
+        return ['espace_id' => $espaceId, 'historique' => $historiqueApres];
+    }
+
+    public function historiqueConserve(int $societeId): array
+    {
+        return $this->model->historiqueConserve($societeId);
+    }
+
     public function supprimerAbonnement(int $id, ?int $userId, ?string $ip): void
     {
         $this->model->supprimerAbonnement($id, $userId);

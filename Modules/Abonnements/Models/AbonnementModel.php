@@ -140,6 +140,80 @@ class AbonnementModel extends BaseModel
         return (int)$this->pdo->lastInsertId();
     }
 
+    /**
+     * Fait passer une société non abonnée à abonnée en une seule opération
+     * atomique : abonnement + espace applicatif actif. Cahier des charges
+     * (ACC-001) : "Une société non abonnée [...] peut devenir abonnée sans
+     * perte d'historique." Avant cette méthode, créer un abonnement et
+     * créer l'espace applicatif correspondant étaient deux actions
+     * manuelles distinctes (deux formulaires séparés) : rien n'empêchait
+     * d'oublier la seconde, laissant la société "abonnée" en base mais
+     * sans accès applicatif réel (TenantEntitlementMiddleware exige les
+     * deux). Aucune donnée préexistante (relations, contacts, emails
+     * reçus) n'est touchée : seul soc_id reste la clé stable qui les relie.
+     */
+    public function souscrireSociete(int $societeId, int $formuleId, ?int $userId): int
+    {
+        $this->beginTransaction();
+        try {
+            $statutActif = $this->statutGeneralId('actif');
+
+            $aboId = $this->enregistrerAbonnement([
+                'abo_societe_id' => $societeId,
+                'abo_formule_abonnement_id' => $formuleId,
+                'abo_statut_abonnement_id' => $statutActif,
+                'abo_statut_paiement_id' => $statutActif,
+                'abo_debute_le' => date('Y-m-d H:i:s'),
+            ], null, $userId);
+
+            $eapId = $this->enregistrerEspace([
+                'eap_societe_id' => $societeId,
+                'eap_abonnement_societe_id' => $aboId,
+                'eap_statut_id' => $statutActif,
+            ], null, $userId);
+
+            $this->commit();
+            return $eapId;
+        } catch (\Throwable $e) {
+            $this->rollback();
+            throw $e;
+        }
+    }
+
+    /**
+     * Historique conservé pour une société, accumulé qu'elle ait été
+     * abonnée ou non (relations inter-sociétés, contacts, emails reçus).
+     * Affiché à la souscription pour prouver concrètement qu'aucun
+     * historique n'a été perdu (ACC-001).
+     */
+    public function historiqueConserve(int $societeId): array
+    {
+        return [
+            'relations' => (int) $this->query(
+                "SELECT COUNT(*) FROM sav_relations_societes
+                 WHERE (rso_societe_source_id = :id OR rso_societe_cible_id = :id2) AND rso_supprime_le IS NULL",
+                ['id' => $societeId, 'id2' => $societeId]
+            )->fetchColumn(),
+            'contacts' => (int) $this->query(
+                "SELECT COUNT(*) FROM sav_contacts_societes WHERE cts_societe_id = :id AND cts_supprime_le IS NULL",
+                ['id' => $societeId]
+            )->fetchColumn(),
+            'emails_recus' => (int) $this->query(
+                "SELECT COUNT(*) FROM sav_journaux_emails WHERE jme_societe_destinataire_id = :id",
+                ['id' => $societeId]
+            )->fetchColumn(),
+        ];
+    }
+
+    private function statutGeneralId(string $code): ?int
+    {
+        $id = $this->query(
+            "SELECT sta_id FROM sav_statuts WHERE sta_domaine = 'general' AND sta_code = :code AND sta_supprime_le IS NULL LIMIT 1",
+            ['code' => $code]
+        )->fetchColumn();
+        return $id !== false && $id !== null ? (int) $id : null;
+    }
+
     public function supprimerAbonnement(int $id, ?int $userId): void
     {
         $this->query("UPDATE sav_abonnements_societes
