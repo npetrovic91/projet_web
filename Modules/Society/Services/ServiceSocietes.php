@@ -154,15 +154,29 @@ class ServiceSocietes implements ServiceInterface{
             'modifie_par' => $idUtilisateur ?: null,
         ];
 
+        $importateurId = (int) ($input['soc_importateur_id'] ?? $input['importateur_id'] ?? 0);
+        $estConcession = in_array(7, $donnees['types_ids'], true);
+
         if ($idSociete !== null) {
             unset($donnees['uuid'], $donnees['cree_par'], $donnees['cree_par_societe_id']);
             $this->societes->modifier($idSociete, $donnees);
+            if ($estConcession && $importateurId > 0) {
+                $this->relations->definirImportateur($idSociete, $importateurId, $idUtilisateur);
+            }
             return ['success' => true, 'id' => $idSociete, 'errors' => [], 'erreurs' => []];
         }
 
         unset($donnees['modifie_par']);
         $id = $this->societes->creer($donnees);
+        if ($estConcession && $importateurId > 0) {
+            $this->relations->definirImportateur($id, $importateurId, $idUtilisateur);
+        }
         return ['success' => true, 'id' => $id, 'errors' => [], 'erreurs' => []];
+    }
+
+    public function importateurDeConcession(int $idSociete): ?int
+    {
+        return $this->relations->importateurDeConcession($idSociete);
     }
 
     public function desactiver(int $idSociete, int $idUtilisateur): bool

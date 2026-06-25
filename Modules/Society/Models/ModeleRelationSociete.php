@@ -109,6 +109,62 @@ class ModeleRelationSociete extends BaseModel
         );
     }
 
+    /**
+     * Importateur actuellement rattaché à une concession (relation
+     * 'importateur_distribue_concession' active), ou null si aucun.
+     * Cahier des charges : "Chaque concession doit avoir un
+     * importateur_id obligatoire."
+     */
+    public function importateurDeConcession(int $idConcession): ?int
+    {
+        $ligne = $this->db->fetch(
+            "SELECT r.rso_societe_source_id AS importateur_id
+             FROM sav_relations_societes r
+             INNER JOIN sav_types_relations_societes tr ON tr.tre_id = r.rso_type_relation_societe_id
+             WHERE r.rso_societe_cible_id = :concession
+               AND LOWER(tr.tre_code) = LOWER('importateur_distribue_concession')
+               AND r.rso_supprime_le IS NULL
+               AND r.rso_archive_le IS NULL
+               AND (r.rso_termine_le IS NULL OR r.rso_termine_le >= CURDATE())
+             ORDER BY r.rso_cree_le DESC
+             LIMIT 1",
+            ['concession' => $idConcession]
+        );
+        return $ligne ? (int) $ligne['importateur_id'] : null;
+    }
+
+    /**
+     * Pose ou met à jour la relation obligatoire importateur->concession.
+     * Si un autre importateur était déjà rattaché, l'ancienne relation est
+     * désactivée (historisée) avant la création de la nouvelle.
+     */
+    public function definirImportateur(int $idConcession, int $idImportateur, int $idUtilisateur): void
+    {
+        $actuel = $this->importateurDeConcession($idConcession);
+        if ($actuel === $idImportateur) {
+            return;
+        }
+
+        if ($actuel !== null) {
+            $ancienne = $this->db->fetch(
+                "SELECT r.rso_id
+                 FROM sav_relations_societes r
+                 INNER JOIN sav_types_relations_societes tr ON tr.tre_id = r.rso_type_relation_societe_id
+                 WHERE r.rso_societe_cible_id = :concession
+                   AND r.rso_societe_source_id = :importateur
+                   AND LOWER(tr.tre_code) = LOWER('importateur_distribue_concession')
+                   AND r.rso_supprime_le IS NULL
+                 LIMIT 1",
+                ['concession' => $idConcession, 'importateur' => $actuel]
+            );
+            if ($ancienne) {
+                $this->desactiver((int) $ancienne['rso_id'], $idUtilisateur);
+            }
+        }
+
+        $this->creer($idImportateur, $idConcession, 'importateur_distribue_concession', $idUtilisateur);
+    }
+
     private function trouverOuCreerTypeRelation(string $type, int $idUtilisateur): int
     {
         $code = strtolower(trim($type)) ?: 'relation';

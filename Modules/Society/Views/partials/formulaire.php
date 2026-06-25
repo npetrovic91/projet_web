@@ -39,7 +39,7 @@ $typesSelectionnes = array_values(array_unique(array_map('intval', $typesSelecti
                     <label for="soc_types_ids">Types *</label>
                     <select name="soc_types_ids[]" id="soc_types_ids" class="form-control" multiple size="8" required>
                         <?php foreach (($types ?? []) as $type): ?>
-                            <option value="<?= (int) $type['cty_id'] ?>" <?= in_array((int) $type['cty_id'], $typesSelectionnes, true) ? 'selected' : '' ?>>
+                            <option value="<?= (int) $type['cty_id'] ?>" data-code="<?= htmlspecialchars((string) ($type['cty_code'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" <?= in_array((int) $type['cty_id'], $typesSelectionnes, true) ? 'selected' : '' ?>>
                                 <?= htmlspecialchars($type['cty_label'] ?? $type['cty_code'], ENT_QUOTES, 'UTF-8') ?>
                             </option>
                         <?php endforeach; ?>
@@ -104,6 +104,18 @@ $typesSelectionnes = array_values(array_unique(array_map('intval', $typesSelecti
                     </select>
                 </div>
             </div>
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label>Importateur <span id="soc_importateur_obligatoire" class="text-danger" style="display:none">*</span></label>
+                    <select name="soc_importateur_id" id="soc_importateur_id" class="form-control">
+                        <option value="">Aucun</option>
+                        <?php foreach (($importateurs ?? []) as $importateur): ?>
+                            <option value="<?= (int) $importateur['soc_id'] ?>" <?= (int) ($societe['soc_importateur_id'] ?? 0) === (int) $importateur['soc_id'] ? 'selected' : '' ?>><?= htmlspecialchars($importateur['soc_nom'], ENT_QUOTES, 'UTF-8') ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <small class="form-text text-muted">Obligatoire si la société est de type Concession.</small>
+                </div>
+            </div>
             <div class="col-md-2">
                 <div class="form-group">
                     <label>Statut</label>
@@ -135,3 +147,26 @@ $typesSelectionnes = array_values(array_unique(array_map('intval', $typesSelecti
         <button type="submit" class="btn btn-primary">Enregistrer</button>
     </div>
 </form>
+<script<?= $nonceAttr ?? '' ?>>
+document.addEventListener('DOMContentLoaded', function () {
+    var typesSelect = document.getElementById('soc_types_ids');
+    var importateurSelect = document.getElementById('soc_importateur_id');
+    var marqueObligatoire = document.getElementById('soc_importateur_obligatoire');
+    if (!typesSelect || !importateurSelect || !marqueObligatoire) return;
+
+    function estConcessionSelectionnee() {
+        return Array.prototype.some.call(typesSelect.selectedOptions, function (option) {
+            return option.getAttribute('data-code') === 'concession';
+        });
+    }
+
+    function appliquerObligation() {
+        var requis = estConcessionSelectionnee();
+        marqueObligatoire.style.display = requis ? '' : 'none';
+        importateurSelect.required = requis;
+    }
+
+    typesSelect.addEventListener('change', appliquerObligation);
+    appliquerObligation();
+});
+</script>

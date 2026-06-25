@@ -6,11 +6,26 @@ namespace Nenad\Autosav\Modules\Society\Services;
 use Nenad\Autosav\Core\Services\Contracts\ServiceInterface;
 
 class ServiceValidationSocietes implements ServiceInterface{
+    /** @var int[] Identifiants sav_types_societes considérés comme "concession" */
+    private const TYPES_CONCESSION = [7];
+
     public function valider(array $donnees): array
     {
         $erreurs = [];
-        if ($this->typesIds($donnees) === []) {
+        $typesIds = $this->typesIds($donnees);
+        if ($typesIds === []) {
             $erreurs['types_ids'] = 'Au moins un type de société est obligatoire.';
+        }
+
+        // Cahier des charges : "Chaque concession doit avoir un
+        // importateur_id obligatoire." Vérifié ici même si le champ est
+        // absent ou vide côté formulaire (le backend ne fait pas confiance
+        // à l'UI).
+        if (array_intersect($typesIds, self::TYPES_CONCESSION) !== []) {
+            $importateurId = (int) ($donnees['soc_importateur_id'] ?? $donnees['importateur_id'] ?? 0);
+            if ($importateurId <= 0) {
+                $erreurs['soc_importateur_id'] = 'Une concession doit obligatoirement être rattachée à un importateur.';
+            }
         }
         if (trim((string) ($donnees['soc_nom'] ?? $donnees['com_name'] ?? '')) === '') {
             $erreurs['soc_nom'] = 'Le nom de la société est obligatoire.';

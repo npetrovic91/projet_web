@@ -110,6 +110,7 @@ class SocieteController extends BaseController
             'types' => $this->societes->types(),
             'holdings' => $this->societes->holdings(),
             'parents' => $this->societes->societesActives(),
+            'importateurs' => $this->societes->societesActives('importateur'),
             'mode' => 'creation',
             'errors' => [],
             'erreurs' => [],
@@ -137,6 +138,7 @@ class SocieteController extends BaseController
             'types' => $this->societes->types(),
             'holdings' => $this->societes->holdings(),
             'parents' => $this->societes->societesActives(),
+            'importateurs' => $this->societes->societesActives('importateur'),
             'mode' => 'creation',
             'errors' => $resultat['errors'],
             'erreurs' => $resultat['erreurs'],
@@ -159,13 +161,17 @@ class SocieteController extends BaseController
             echo 'Société introuvable.';
             return;
         }
+        $societeAvecImportateur = $fiche['societe'];
+        $societeAvecImportateur['soc_importateur_id'] = $this->societes->importateurDeConcession($idSociete);
+
         $this->render('Society/Views/modification', [
             'page_title' => 'Modifier société',
-            'societe' => $fiche['societe'],
-            'company' => $fiche['societe'],
+            'societe' => $societeAvecImportateur,
+            'company' => $societeAvecImportateur,
             'types' => $this->societes->types(),
             'holdings' => $this->societes->holdings(),
             'parents' => $this->societes->societesActives(),
+            'importateurs' => $this->societes->societesActives('importateur'),
             'mode' => 'modification',
             'errors' => [],
             'erreurs' => [],
@@ -195,6 +201,7 @@ class SocieteController extends BaseController
             'types' => $this->societes->types(),
             'holdings' => $this->societes->holdings(),
             'parents' => $this->societes->societesActives(),
+            'importateurs' => $this->societes->societesActives('importateur'),
             'mode' => 'modification',
             'errors' => $resultat['errors'],
             'erreurs' => $resultat['erreurs'],
