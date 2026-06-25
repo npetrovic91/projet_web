@@ -186,12 +186,15 @@ class StandardModel extends BaseModel
         if (!$standardId || $version === '' || $from === '') {
             throw new \InvalidArgumentException('Le standard, la version et la date de début sont obligatoires.');
         }
+        // ACC-008 : toute nouvelle version démarre en brouillon, jamais
+        // directement applicable. Elle doit être soumise puis validée par
+        // un niveau supérieur (cf. StandardService::soumettrePourValidation/validerVersion).
         $this->db->execute(
             "INSERT INTO sav_versions_standards
-                (vst_standard_id, vst_version, vst_valide_du, vst_valide_au, vst_statut_id,
+                (vst_standard_id, vst_version, vst_valide_du, vst_valide_au, vst_statut_id, vst_etat_validation,
                  vst_cree_par_utilisateur_id, vst_modifie_par_utilisateur_id)
              VALUES
-                (:standard_id, :version, :valide_du, :valide_au, :statut_id, :user_id, :user_id)",
+                (:standard_id, :version, :valide_du, :valide_au, :statut_id, 'draft', :user_id, :user_id)",
             [
                 'standard_id' => $standardId,
                 'version' => $version,
@@ -202,6 +205,72 @@ class StandardModel extends BaseModel
             ]
         );
         return (int) $this->db->lastInsertId();
+    }
+
+    /**
+     * Versions réellement applicables (ACC-008) : validées, jamais en
+     * brouillon ni en attente. À utiliser par tout consommateur qui
+     * affiche des standards "actifs" à des utilisateurs opérationnels.
+     */
+    public function versionsApprouvees(?int $standardId = null): array
+    {
+        $where = ["v.vst_supprime_le IS NULL", "v.vst_archive_le IS NULL", "v.vst_etat_validation = 'approved'"];
+        $params = [];
+        if ($standardId !== null) {
+            $where[] = 'v.vst_standard_id = :standard_id';
+            $params['standard_id'] = $standardId;
+        }
+
+        return $this->db->fetchAll(
+            "SELECT v.*, s.std_code, s.std_nom, s.std_type_standard
+             FROM sav_versions_standards v
+             INNER JOIN sav_standards s ON s.std_id = v.vst_standard_id
+             WHERE " . implode(' AND ', $where) . "
+             ORDER BY s.std_nom ASC, v.vst_valide_du DESC, v.vst_version DESC",
+            $params
+        );
+    }
+
+    /**
+     * Soumet une version en brouillon pour validation (draft -> pending_validation).
+     * Refuse si la version n'est pas en brouillon.
+     */
+    public function soumettrePourValidation(int $id, int $userId): bool
+    {
+        return $this->db->execute(
+            "UPDATE sav_versions_standards
+             SET vst_etat_validation = 'pending_validation', vst_soumis_le = NOW(), vst_modifie_par_utilisateur_id = :user_id
+             WHERE vst_id = :id AND vst_etat_validation = 'draft' AND vst_supprime_le IS NULL",
+            ['id' => $id, 'user_id' => $userId]
+        );
+    }
+
+    /**
+     * Approuve une version en attente (pending_validation -> approved).
+     * Le contrôle "validateur != auteur et de niveau supérieur" est fait
+     * en amont par StandardService, pas ici : ce modèle ne fait que
+     * persister la décision déjà autorisée.
+     */
+    public function validerVersion(int $id, int $userId): bool
+    {
+        return $this->db->execute(
+            "UPDATE sav_versions_standards
+             SET vst_etat_validation = 'approved', vst_valide_par_utilisateur_id = :user_id, vst_valide_le = NOW(),
+                 vst_modifie_par_utilisateur_id = :user_id
+             WHERE vst_id = :id AND vst_etat_validation = 'pending_validation' AND vst_supprime_le IS NULL",
+            ['id' => $id, 'user_id' => $userId]
+        );
+    }
+
+    public function rejeterVersion(int $id, int $userId, string $motif): bool
+    {
+        return $this->db->execute(
+            "UPDATE sav_versions_standards
+             SET vst_etat_validation = 'rejected', vst_valide_par_utilisateur_id = :user_id, vst_rejete_le = NOW(),
+                 vst_motif_rejet = :motif, vst_modifie_par_utilisateur_id = :user_id
+             WHERE vst_id = :id AND vst_etat_validation = 'pending_validation' AND vst_supprime_le IS NULL",
+            ['id' => $id, 'user_id' => $userId, 'motif' => $motif]
+        );
     }
 
     public function updateVersion(int $id, array $data, ?int $userId): bool

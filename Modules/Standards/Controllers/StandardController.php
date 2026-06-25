@@ -143,6 +143,55 @@ class StandardController extends BaseController
         $this->redirect('/standards/versions');
     }
 
+    /**
+     * ACC-008 : l'auteur soumet sa version en brouillon pour validation.
+     */
+    public function soumettreVersion(string $id): void
+    {
+        $this->requirePermission('standard.gerer');
+        $this->validateCsrf();
+        $resultat = $this->service->soumettrePourValidation((int) $id, $this->userId());
+        $resultat['success']
+            ? $this->flash()->success('Version soumise pour validation.')
+            : $this->flash()->error(implode(' ', $resultat['errors']));
+        $this->redirect('/standards/versions');
+    }
+
+    /**
+     * ACC-008 : validation par un niveau supérieur, jamais par l'auteur.
+     * Le refus (auto-validation ou niveau insuffisant) est journalisé.
+     */
+    public function validerVersion(string $id): void
+    {
+        $this->requirePermission('standard.gerer');
+        $this->validateCsrf();
+        $resultat = $this->service->validerVersion((int) $id, $this->userId());
+        if ($resultat['success']) {
+            $this->flash()->success('Version validée et désormais applicable.');
+        } else {
+            $this->flash()->error(implode(' ', $resultat['errors']));
+            if (function_exists('logger')) {
+                logger('security')->warning('standard_validation_refusee', [
+                    'version_id' => (int) $id,
+                    'user_id' => $this->userId(),
+                    'raisons' => $resultat['errors'],
+                ]);
+            }
+        }
+        $this->redirect('/standards/versions');
+    }
+
+    public function rejeterVersion(string $id): void
+    {
+        $this->requirePermission('standard.gerer');
+        $this->validateCsrf();
+        $resultat = $this->service->rejeterVersion((int) $id, $this->userId(), (string) $this->request->post('motif', ''));
+        $resultat['success']
+            ? $this->flash()->success('Version rejetée.')
+            : $this->flash()->error(implode(' ', $resultat['errors']));
+        $this->redirect('/standards/versions');
+    }
+
     public function exigences(): void
     {
         $this->requirePermission('standard.consulter');
