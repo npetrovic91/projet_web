@@ -69,8 +69,8 @@ $vehicules = $vehicules ?? [];
             <?php if ($canEdit): ?>
             <td class="text-right">
               <form method="POST" action="<?= $e($baseUrl) ?>/vehicules/<?= $vid ?>/delete"
-                    onsubmit="return confirm('Retirer ce véhicule du parc ?');" class="d-inline">
-                <input type="hidden" name="csrf_token" value="<?= $e($csrf_token ?? '') ?>">
+                    data-confirm="Retirer ce véhicule du parc ?" class="d-inline">
+                <?= csrf_field() ?>
                 <button type="submit" class="btn btn-xs btn-outline-danger" title="Retirer">
                   <i class="fas fa-trash"></i>
                 </button>
@@ -91,7 +91,7 @@ $vehicules = $vehicules ?? [];
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <form method="POST" action="<?= $e($baseUrl) ?>/vehicules">
-        <input type="hidden" name="csrf_token" value="<?= $e($csrf_token ?? '') ?>">
+        <?= csrf_field() ?>
         <div class="modal-header">
           <h5 class="modal-title"><i class="fas fa-car mr-2"></i>Ajouter un véhicule au parc</h5>
           <button type="button" class="close" data-dismiss="modal">&times;</button>

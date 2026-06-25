@@ -1,7 +1,8 @@
 # AUTOSAV — Exemple cron production
 # Adapter /chemin/vers/autosav et le binaire PHP selon l'hébergement.
 
-# Sauvegarde BDD quotidienne à 02:10
+# Sauvegarde BDD quotidienne à 02:10 (purge automatique des sauvegardes
+# au-delà de BACKUP_RETENTION_DAYS : voir Core/Services/Production/BackupService::purgeOldBackups)
 10 2 * * * cd /chemin/vers/autosav && php bin/backup_database.php >> storage/logs/cron_backup.log 2>&1
 
 # Rotation des journaux quotidienne à 02:30
@@ -12,3 +13,29 @@
 
 # Healthcheck toutes les 5 minutes
 */5 * * * * cd /chemin/vers/autosav && php bin/health_check.php >> storage/logs/cron_health.log 2>&1
+
+# ============================================================
+# INSTALLATION SUR HOSTINGER (hébergement mutualisé hPanel)
+# ============================================================
+# Ce fichier est un gabarit : il ne s'installe pas tout seul. `crontab -e`
+# n'est généralement pas disponible en mutualisé Hostinger ; il faut passer
+# par l'interface hPanel :
+#
+#   1. hPanel → Avancé → Cron Jobs (ou "Tâches Cron").
+#   2. Pour CHACUNE des 4 lignes ci-dessus, créer une tâche séparée :
+#        - Fréquence : reproduire le motif cron (ex. "10 2 * * *" = tous les
+#          jours à 02h10 → choisir "Une fois par jour" puis l'heure 02:10).
+#        - Commande : remplacer /chemin/vers/autosav par le chemin réel
+#          affiché dans le gestionnaire de fichiers Hostinger, généralement
+#          /home/<utilisateur>/domains/devnenad.fr/public_html
+#          (donc : cd /home/<utilisateur>/domains/devnenad.fr/public_html && php bin/backup_database.php >> storage/logs/cron_backup.log 2>&1)
+#   3. Vérifier le binaire PHP : Hostinger expose souvent plusieurs versions
+#      (php, php8.1, php8.2...). Utiliser celle qui correspond à
+#      composer.json ("php": ">=8.1"). La commande `which php8.1` via le
+#      terminal hPanel donne le chemin exact si besoin (ex. /usr/bin/php8.1).
+#   4. Après la première exécution réelle (attendre l'heure programmée, ou
+#      lancer une fois manuellement via le terminal hPanel pour valider),
+#      lancer `php scripts/check-production.php` : la section "Cron en
+#      retard / Cron jamais exécuté" confirmera si les tâches tournent
+#      réellement, en se basant sur l'horodatage des fichiers
+#      storage/logs/cron_*.log produits par chaque commande ci-dessus.

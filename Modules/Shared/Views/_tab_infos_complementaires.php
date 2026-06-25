@@ -29,7 +29,7 @@ $val = fn(string $k) => $ic["{$p}_{$k}"] ?? null;
 ?>
 
 <form method="POST" action="<?= $e($baseUrl) ?>/infos-complementaires" id="form-infos-complementaires">
-  <input type="hidden" name="csrf_token" value="<?= $e($csrf_token ?? '') ?>">
+  <?= csrf_field() ?>
 
   <div class="card card-outline card-primary mb-3">
     <div class="card-header"><h3 class="card-title">Identification client</h3></div>

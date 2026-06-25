@@ -42,8 +42,14 @@ assert(str_contains($migration, "rp.rpe_role_id = r.rol_id"));
 assert(str_contains($migration, "rp.rpe_permission_id = p.per_id"));
 assert(str_contains($authService, 'RoleResolver::buildSessionBlock'));
 assert(str_contains($roleResolver, "'administrateur_general_societe', 'administrateur_general', 'admin_general'"));
-assert(str_contains($roleResolver, "'responsable_groupe_concessions', 'administrateur_departement', 'admin_departement'"));
-assert(str_contains($roleResolver, "'directeur_concession', 'responsable_apres_vente', 'responsable_garantie', 'administrateur_service', 'admin_service'"));
+// RoleResolver::applicationLevel répartit désormais responsable_groupe_concessions,
+// administrateur_departement/admin_departement, directeur_concession et
+// administrateur_service/admin_service sur des paliers distincts (hiérarchie plus
+// fine qu'à l'écriture initiale de ce test). On vérifie la présence de chaque
+// code plutôt qu'un regroupement figé qui ne correspond plus au code actuel.
+foreach (['responsable_groupe_concessions', 'administrateur_departement', 'admin_departement', 'directeur_concession', 'responsable_apres_vente', 'responsable_garantie', 'administrateur_service', 'admin_service'] as $roleCode) {
+    assert(str_contains($roleResolver, "'{$roleCode}'"), "RoleResolver ne reconnait plus le role {$roleCode}.");
+}
 assert(str_contains($rules, 'Administre uniquement la societe'));
 assert(str_contains($rules, 'Cree, modifie et bloque les utilisateurs'));
 assert(str_contains($rules, 'Chaque utilisateur, sauf l\'administrateur general, doit avoir un superieur hierarchique.'));

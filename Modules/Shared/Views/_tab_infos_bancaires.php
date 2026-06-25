@@ -62,8 +62,8 @@ $mandats = $mandats ?? [];
             <?php if ($canEdit): ?>
             <td class="text-right">
               <form method="POST" action="<?= $e($baseUrl) ?>/comptes-bancaires/<?= $cid ?>/delete"
-                    onsubmit="return confirm('Supprimer ce compte bancaire ?');">
-                <input type="hidden" name="csrf_token" value="<?= $e($csrf_token ?? '') ?>">
+                    data-confirm="Supprimer ce compte bancaire ?">
+                <?= csrf_field() ?>
                 <button type="submit" class="btn btn-xs btn-outline-danger">
                   <i class="fas fa-trash"></i>
                 </button>
@@ -122,8 +122,8 @@ $mandats = $mandats ?? [];
             <?php if ($canEdit): ?>
             <td class="text-right">
               <form method="POST" action="<?= $e($baseUrl) ?>/mandats/<?= $mid ?>/delete"
-                    onsubmit="return confirm('Supprimer ce mandat ?');" class="d-inline">
-                <input type="hidden" name="csrf_token" value="<?= $e($csrf_token ?? '') ?>">
+                    data-confirm="Supprimer ce mandat ?" class="d-inline">
+                <?= csrf_field() ?>
                 <button type="submit" class="btn btn-xs btn-outline-danger"><i class="fas fa-trash"></i></button>
               </form>
             </td>
@@ -142,7 +142,7 @@ $mandats = $mandats ?? [];
   <div class="modal-dialog">
     <div class="modal-content">
       <form method="POST" action="<?= $e($baseUrl) ?>/comptes-bancaires">
-        <input type="hidden" name="csrf_token" value="<?= $e($csrf_token ?? '') ?>">
+        <?= csrf_field() ?>
         <div class="modal-header"><h5 class="modal-title">Nouveau compte bancaire</h5>
           <button type="button" class="close" data-dismiss="modal">&times;</button></div>
         <div class="modal-body">
@@ -181,7 +181,7 @@ $mandats = $mandats ?? [];
   <div class="modal-dialog">
     <div class="modal-content">
       <form method="POST" action="<?= $e($baseUrl) ?>/mandats">
-        <input type="hidden" name="csrf_token" value="<?= $e($csrf_token ?? '') ?>">
+        <?= csrf_field() ?>
         <div class="modal-header"><h5 class="modal-title">Nouveau mandat de prélèvement</h5>
           <button type="button" class="close" data-dismiss="modal">&times;</button></div>
         <div class="modal-body">

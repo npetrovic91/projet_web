@@ -29,6 +29,8 @@
   },
   "minimum-stability": "stable",
   "scripts": {
+    "test": "php bin/run_tests.php",
+    "autosav:migrate": "php bin/migrate.php",
     "autosav:preflight": "php bin/production_preflight.php",
     "autosav:backup": "php bin/backup_database.php",
     "autosav:rotate-logs": "php bin/rotate_logs.php",

@@ -77,6 +77,33 @@ if (is_file($urls)) {
     }
 }
 
+// Fraîcheur des tâches planifiées (cron). Ce contrôle est informatif : il ne
+// peut pas vérifier qu'un cron est installé côté hébergeur, seulement que les
+// scripts qu'il est censé déclencher ont effectivement tourné récemment.
+$cronChecks = [
+    'storage/logs/cron_backup.log'   => ['label' => 'Sauvegarde BDD (bin/backup_database.php)', 'max_age_hours' => 26],
+    'storage/logs/cron_rotate_logs.log' => ['label' => 'Rotation des logs (bin/rotate_logs.php)', 'max_age_hours' => 26],
+    'storage/logs/cron_maintenance.log' => ['label' => 'Maintenance (bin/run_maintenance.php)', 'max_age_hours' => 26],
+    'storage/logs/cron_health.log'   => ['label' => 'Healthcheck (bin/health_check.php)', 'max_age_hours' => 1],
+];
+foreach ($cronChecks as $relativePath => $meta) {
+    $path = $root . '/' . $relativePath;
+    if (!is_file($path)) {
+        $warnings[] = "Cron jamais exécuté : {$meta['label']} — {$relativePath} introuvable. " .
+            "Vérifiez que la tâche planifiée est installée côté hébergeur (voir deploy/cron.example).";
+        continue;
+    }
+    $ageHours = (time() - (filemtime($path) ?: 0)) / 3600;
+    if ($ageHours > $meta['max_age_hours']) {
+        $warnings[] = sprintf(
+            "Cron en retard : %s — dernière exécution il y a %.1f h (attendu < %d h).",
+            $meta['label'],
+            $ageHours,
+            $meta['max_age_hours']
+        );
+    }
+}
+
 if ($errors) {
     fwrite(STDERR, "AUTOSAV production check — ERREURS\n");
     foreach ($errors as $message) {
