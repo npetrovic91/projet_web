@@ -57,6 +57,7 @@ class SocieteController extends BaseController
             echo 'Accès refusé.';
             return;
         }
+        $this->requireSuperAdminJustification($idSociete);
         $fiche = $this->societes->ficheComplete($idSociete);
         if (!$fiche) {
             http_response_code(404);
@@ -155,6 +156,7 @@ class SocieteController extends BaseController
             echo 'Accès refusé.';
             return;
         }
+        $this->requireSuperAdminJustification($idSociete);
         $fiche = $this->societes->ficheComplete($idSociete);
         if (!$fiche) {
             http_response_code(404);

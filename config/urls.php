@@ -708,6 +708,8 @@ return [
     'GET /admin/application'               => ['SuperAdmin\\Controllers\\SuperAdminController', 'application', ['auth', 'maintenance']],
     'GET /super-admin/application'         => ['SuperAdmin\\Controllers\\SuperAdminController', 'application', ['auth', 'maintenance']],
     'GET /super-admin/export.json'         => ['SuperAdmin\\Controllers\\SuperAdminController', 'exportJson',   ['auth', 'maintenance']],
+    'GET /super-admin/justification'       => ['SuperAdmin\\Controllers\\SuperAdminController', 'justificationForm',   ['auth', 'maintenance']],
+    'POST /super-admin/justification'      => ['SuperAdmin\\Controllers\\SuperAdminController', 'justificationSubmit', ['auth', 'maintenance', 'csrf']],
 
     'GET /autotests'                       => ['AutoTests\\Controllers\\AutoTestController',    'index',       ['auth', 'maintenance']],
     'GET /admin/autotests'                 => ['AutoTests\\Controllers\\AutoTestController',    'index',       ['auth', 'maintenance']],

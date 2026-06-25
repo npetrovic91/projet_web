@@ -4,6 +4,8 @@ declare(strict_types=1);
 namespace Nenad\Autosav\Modules\SuperAdmin\Controllers;
 
 use Nenad\Autosav\Core\Controller\BaseController;
+use Nenad\Autosav\Core\Security\Class\SuperAdminAccessGuard;
+use Nenad\Autosav\Modules\Society\Services\ServiceSocietes;
 use Nenad\Autosav\Modules\SuperAdmin\Services\SuperAdminService;
 
 final class SuperAdminController extends BaseController
@@ -40,5 +42,52 @@ final class SuperAdminController extends BaseController
     {
         $this->requireRole(defined('ROLE_SUPERADMIN') ? ROLE_SUPERADMIN : 'super_administrateur');
         $this->json(true, $this->service->export(), 'Export de gestion application généré.');
+    }
+
+    /**
+     * Formulaire de justification obligatoire (ACC-007) avant l'accès
+     * du super_admin aux données métier d'une société cliente.
+     */
+    public function justificationForm(): void
+    {
+        $this->requireRole(defined('ROLE_SUPERADMIN') ? ROLE_SUPERADMIN : 'super_administrateur');
+
+        $societeId = (int) $this->get('societe_id', 0);
+        $retour = (string) $this->get('retour', '/companies/' . $societeId);
+        if ($societeId <= 0) {
+            $this->redirect('/super-admin');
+        }
+
+        $societe = (new ServiceSocietes())->ficheComplete($societeId);
+
+        $this->render('SuperAdmin/justification', [
+            'pageTitle' => 'Justification d’accès — données métier',
+            'breadcrumb' => ['Super-admin' => '/super-admin', 'Justification' => null],
+            'societeId' => $societeId,
+            'societeNom' => $societe['societe']['soc_nom'] ?? $societe['societe']['com_name'] ?? ('Société #' . $societeId),
+            'retour' => $retour,
+            'motifs' => SuperAdminAccessGuard::MOTIFS,
+            'csrf_token' => $this->csrfToken(),
+        ]);
+    }
+
+    public function justificationSubmit(): void
+    {
+        $this->requireRole(defined('ROLE_SUPERADMIN') ? ROLE_SUPERADMIN : 'super_administrateur');
+        $this->validateCsrf();
+
+        $societeId = (int) $this->request->post('societe_id', 0);
+        $motif = (string) $this->request->post('motif', '');
+        $justification = trim((string) $this->request->post('justification', ''));
+        $retour = (string) $this->request->post('retour', '/companies/' . $societeId);
+
+        if ($societeId <= 0 || !in_array($motif, SuperAdminAccessGuard::MOTIFS, true) || mb_strlen($justification) < 10) {
+            $this->flash('error', 'Motif invalide ou justification trop courte (10 caractères minimum).');
+            $this->redirect('/super-admin/justification?societe_id=' . $societeId . '&retour=' . rawurlencode($retour));
+        }
+
+        SuperAdminAccessGuard::ouvrirAcces($this->operatorId(), $societeId, $motif, $justification, $retour);
+        $this->flash('warning', 'Accès aux données métier de cette société journalisé (motif : ' . $motif . ').');
+        $this->redirect($retour !== '' ? $retour : ('/companies/' . $societeId));
     }
 }

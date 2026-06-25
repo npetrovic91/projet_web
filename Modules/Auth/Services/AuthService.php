@@ -7,6 +7,7 @@ use Nenad\Autosav\Core\Services\Contracts\ServiceInterface;
 use Nenad\Autosav\Core\Security\Class\PasswordManager;
 use Nenad\Autosav\Core\Security\Class\RoleResolver;
 use Nenad\Autosav\Core\Security\Class\SessionHandler;
+use Nenad\Autosav\Core\Security\Class\SuperAdminAccessGuard;
 use Nenad\Autosav\Modules\Auth\Models\AuthModel;
 
 /**
@@ -113,6 +114,7 @@ class AuthService implements ServiceInterface
             ], $motif);
         }
 
+        SuperAdminAccessGuard::cloturerTout();
         SessionHandler::destroy();
     }
 

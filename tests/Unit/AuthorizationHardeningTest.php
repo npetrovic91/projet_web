@@ -15,7 +15,10 @@ assert(str_contains($usersController, "requirePermission('utilisateur.bloquer')"
 assert(str_contains($usersService, "'super_administrateur', 'super_admin', 'superadmin'"));
 assert(str_contains($usersService, '$rolesRefuses = array_diff'));
 assert(str_contains($rolesAjaxController, "LOWER(r.rol_code) NOT IN"));
-assert(substr_count($superAdminController, 'requireRole(') === 3);
+// 2026-06-25 : ajout de justificationForm()/justificationSubmit() (ACC-007,
+// acces justifie aux donnees metier), toutes deux protegees par requireRole()
+// comme les actions existantes : 3 + 2 = 5.
+assert(substr_count($superAdminController, 'requireRole(') === 5);
 assert(substr_count($autoTestController, 'requireRole(') === 4);
 
 echo "AuthorizationHardeningTest SUCCESS\n";

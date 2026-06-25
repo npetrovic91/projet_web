@@ -10,6 +10,7 @@ use Nenad\Autosav\Core\Logger\LogManager;
 use Nenad\Autosav\Core\Request\Request;
 use Nenad\Autosav\Core\Security\SecurityManager;
 use Nenad\Autosav\Core\Security\Class\CsrfProtection;
+use Nenad\Autosav\Core\Security\Class\SuperAdminAccessGuard;
 use Nenad\Autosav\Core\View\BaseView;
 
 /**
@@ -322,6 +323,33 @@ abstract class BaseController
                 exit;
             }
         }
+    }
+
+    /**
+     * Garde-fou d'acces justifie du super_admin aux donnees d'une societe
+     * cliente (contrainte non negociable du cahier des charges, ACC-007).
+     * No-op pour tout utilisateur qui n'est pas super_admin, ou qui
+     * consulte une societe de son propre perimetre.
+     *
+     * Si le super_admin n'a pas encore justifie son acces a cette societe
+     * (ou que la justification a expire), redirige vers le formulaire de
+     * justification puis revient sur l'URL d'origine. Sinon, journalise
+     * silencieusement cette consultation et laisse la requete continuer.
+     */
+    protected function requireSuperAdminJustification(int $societeId): void
+    {
+        if ($societeId <= 0 || !SuperAdminAccessGuard::estSuperAdmin() || !SuperAdminAccessGuard::estSocieteEtrangere($societeId)) {
+            return;
+        }
+
+        if (SuperAdminAccessGuard::aUneJustificationActive($societeId)) {
+            $route = (string) ($_SERVER['REQUEST_URI'] ?? '');
+            SuperAdminAccessGuard::journaliserAction($societeId, $route);
+            return;
+        }
+
+        $retour = (string) ($_SERVER['REQUEST_URI'] ?? '/');
+        $this->redirect('/super-admin/justification?societe_id=' . $societeId . '&retour=' . rawurlencode($retour));
     }
 
     /**
