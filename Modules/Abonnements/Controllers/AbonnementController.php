@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace Nenad\Autosav\Modules\Abonnements\Controllers;
 
-use InvalidArgumentException;
 use Nenad\Autosav\Core\Controller\BaseController;
 use Nenad\Autosav\Modules\Abonnements\Services\AbonnementService;
 
@@ -70,16 +69,16 @@ class AbonnementController extends BaseController
             $this->redirect('/abonnements/souscrire?societe_id=' . $societeId);
         }
 
-        try {
-            $resultat = $this->service->souscrireSociete($societeId, $formuleId, $this->userId(), client_ip());
+        $resultat = $this->service->souscrireSociete($societeId, $formuleId, $this->userId(), client_ip());
+        if ($resultat['success']) {
             $this->flash()->success(sprintf(
                 'Société abonnée. Historique conservé : %d relation(s), %d contact(s), %d email(s) reçu(s).',
                 $resultat['historique']['relations'],
                 $resultat['historique']['contacts'],
                 $resultat['historique']['emails_recus']
             ));
-        } catch (\Throwable $e) {
-            $this->flash()->error('Souscription impossible : ' . $e->getMessage());
+        } else {
+            $this->flash()->error('Souscription impossible : ' . implode(' ', $resultat['errors']));
         }
         $this->redirect('/abonnements');
     }
@@ -123,8 +122,8 @@ class AbonnementController extends BaseController
     {
         $this->requirePermission('abonnements.manage');
         $this->validateCsrf();
-        $this->service->supprimerAbonnement((int)$id, $this->userId(), client_ip());
-        $this->flash()->success('Abonnement supprimé logiquement.');
+        $resultat = $this->service->supprimerAbonnement((int)$id, $this->userId(), client_ip());
+        $resultat['success'] ? $this->flash()->success($resultat['message']) : $this->flash()->error(implode(' ', $resultat['errors']));
         $this->redirect('/abonnements');
     }
 
@@ -172,8 +171,8 @@ class AbonnementController extends BaseController
     {
         $this->requirePermission('abonnements.manage');
         $this->validateCsrf();
-        $this->service->supprimerFormule((int)$id, $this->userId(), client_ip());
-        $this->flash()->success('Formule supprimée logiquement.');
+        $resultat = $this->service->supprimerFormule((int)$id, $this->userId(), client_ip());
+        $resultat['success'] ? $this->flash()->success($resultat['message']) : $this->flash()->error(implode(' ', $resultat['errors']));
         $this->redirect('/abonnements/formules');
     }
 
@@ -224,8 +223,8 @@ class AbonnementController extends BaseController
     {
         $this->requirePermission('abonnements.manage');
         $this->validateCsrf();
-        $this->service->supprimerEspace((int)$id, $this->userId(), client_ip());
-        $this->flash()->success('Espace applicatif supprimé logiquement.');
+        $resultat = $this->service->supprimerEspace((int)$id, $this->userId(), client_ip());
+        $resultat['success'] ? $this->flash()->success($resultat['message']) : $this->flash()->error(implode(' ', $resultat['errors']));
         $this->redirect('/abonnements/espaces');
     }
 
@@ -276,8 +275,8 @@ class AbonnementController extends BaseController
     {
         $this->requirePermission('abonnements.manage');
         $this->validateCsrf();
-        $this->service->supprimerModuleSociete((int)$id, $this->userId(), client_ip());
-        $this->flash()->success('Activation module/société supprimée logiquement.');
+        $resultat = $this->service->supprimerModuleSociete((int)$id, $this->userId(), client_ip());
+        $resultat['success'] ? $this->flash()->success($resultat['message']) : $this->flash()->error(implode(' ', $resultat['errors']));
         $this->redirect('/abonnements/modules-societes');
     }
 
@@ -285,55 +284,51 @@ class AbonnementController extends BaseController
     {
         $this->requirePermission('abonnements.manage');
         $this->validateCsrf();
-        try {
-            $this->service->enregistrerAbonnement($_POST, $id, $this->userId(), client_ip());
-            $this->flash()->success('Abonnement enregistré.');
+        $resultat = $this->service->enregistrerAbonnement($_POST, $id, $this->userId(), client_ip());
+        if ($resultat['success']) {
+            $this->flash()->success($resultat['message']);
             $this->redirect('/abonnements');
-        } catch (InvalidArgumentException $e) {
-            $this->flash()->error($e->getMessage());
-            $this->redirect($id ? '/abonnements/' . $id . '/edit' : '/abonnements/create');
         }
+        $this->flash()->error(implode(' ', $resultat['errors']));
+        $this->redirect($id ? '/abonnements/' . $id . '/edit' : '/abonnements/create');
     }
 
     private function saveFormule(?int $id): void
     {
         $this->requirePermission('abonnements.manage');
         $this->validateCsrf();
-        try {
-            $this->service->enregistrerFormule($_POST, $id, $this->userId(), client_ip());
-            $this->flash()->success('Formule enregistrée.');
+        $resultat = $this->service->enregistrerFormule($_POST, $id, $this->userId(), client_ip());
+        if ($resultat['success']) {
+            $this->flash()->success($resultat['message']);
             $this->redirect('/abonnements/formules');
-        } catch (InvalidArgumentException $e) {
-            $this->flash()->error($e->getMessage());
-            $this->redirect($id ? '/abonnements/formules/' . $id . '/edit' : '/abonnements/formules/create');
         }
+        $this->flash()->error(implode(' ', $resultat['errors']));
+        $this->redirect($id ? '/abonnements/formules/' . $id . '/edit' : '/abonnements/formules/create');
     }
 
     private function saveEspace(?int $id): void
     {
         $this->requirePermission('abonnements.manage');
         $this->validateCsrf();
-        try {
-            $this->service->enregistrerEspace($_POST, $id, $this->userId(), client_ip());
-            $this->flash()->success('Espace applicatif enregistré.');
+        $resultat = $this->service->enregistrerEspace($_POST, $id, $this->userId(), client_ip());
+        if ($resultat['success']) {
+            $this->flash()->success($resultat['message']);
             $this->redirect('/abonnements/espaces');
-        } catch (InvalidArgumentException $e) {
-            $this->flash()->error($e->getMessage());
-            $this->redirect($id ? '/abonnements/espaces/' . $id . '/edit' : '/abonnements/espaces/create');
         }
+        $this->flash()->error(implode(' ', $resultat['errors']));
+        $this->redirect($id ? '/abonnements/espaces/' . $id . '/edit' : '/abonnements/espaces/create');
     }
 
     private function saveModuleSociete(?int $id): void
     {
         $this->requirePermission('abonnements.manage');
         $this->validateCsrf();
-        try {
-            $this->service->enregistrerModuleSociete($_POST, $id, $this->userId(), client_ip());
-            $this->flash()->success('Module société enregistré.');
+        $resultat = $this->service->enregistrerModuleSociete($_POST, $id, $this->userId(), client_ip());
+        if ($resultat['success']) {
+            $this->flash()->success($resultat['message']);
             $this->redirect('/abonnements/modules-societes');
-        } catch (InvalidArgumentException $e) {
-            $this->flash()->error($e->getMessage());
-            $this->redirect($id ? '/abonnements/modules-societes/' . $id . '/edit' : '/abonnements/modules-societes/create');
         }
+        $this->flash()->error(implode(' ', $resultat['errors']));
+        $this->redirect($id ? '/abonnements/modules-societes/' . $id . '/edit' : '/abonnements/modules-societes/create');
     }
 }
