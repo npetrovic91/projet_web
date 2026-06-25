@@ -1,0 +1,30 @@
+Les routes existantes /companies peuvent rester telles quelles grâce à l'alias :
+Companies\Controllers\CompanyController extends Society\Controllers\SocieteController
+
+Routes existantes compatibles :
+GET  /companies
+GET  /companies/create
+POST /companies/store
+GET  /companies/{id}
+GET  /companies/{id}/edit
+POST /companies/{id}/update
+POST /companies/{id}/delete
+POST /companies/{id}/restore
+POST /companies/relation/add
+POST /companies/relation/{id}/remove
+POST /companies/brand/attach
+POST /companies/brand/detach
+
+Si tu veux ajouter les routes françaises en parallèle, ajoute aussi :
+GET  /societes                         => ['Society\\Controllers\\SocieteController', 'index', ['auth', 'maintenance']]
+GET  /societes/creation                => ['Society\\Controllers\\SocieteController', 'create', ['auth', 'maintenance']]
+POST /societes/enregistrer             => ['Society\\Controllers\\SocieteController', 'store', ['auth', 'maintenance']]
+GET  /societes/{id}                    => ['Society\\Controllers\\SocieteController', 'show', ['auth', 'maintenance']]
+GET  /societes/{id}/modifier           => ['Society\\Controllers\\SocieteController', 'edit', ['auth', 'maintenance']]
+POST /societes/{id}/modifier           => ['Society\\Controllers\\SocieteController', 'update', ['auth', 'maintenance']]
+POST /societes/{id}/supprimer          => ['Society\\Controllers\\SocieteController', 'delete', ['auth', 'maintenance']]
+POST /societes/{id}/reactiver          => ['Society\\Controllers\\SocieteController', 'restore', ['auth', 'maintenance']]
+POST /societes/relation/ajouter        => ['Society\\Controllers\\SocieteController', 'addRelation', ['auth', 'maintenance']]
+POST /societes/relation/{id}/retirer   => ['Society\\Controllers\\SocieteController', 'removeRelation', ['auth', 'maintenance']]
+POST /societes/marque/attacher         => ['Society\\Controllers\\SocieteController', 'attachBrand', ['auth', 'maintenance']]
+POST /societes/marque/detacher         => ['Society\\Controllers\\SocieteController', 'detachBrand', ['auth', 'maintenance']]

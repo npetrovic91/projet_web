@@ -1,0 +1,20 @@
+<?php $row = $row ?? null; $listes = $listes ?? []; $parents = $parents ?? []; $isEdit = !empty($row); ?>
+<section class="container py-3">
+    <h1 class="h3 mb-3"><?= $isEdit ? 'Modifier l’élément de menu' : 'Créer un élément de menu' ?></h1>
+    <form method="post" action="<?= url($isEdit ? '/menus/elements/' . (int)$row['eme_id'] . '/update' : '/menus/elements/store') ?>" class="card card-body">
+        <?= $csrfField ?? csrf_field() ?>
+        <div class="row g-3">
+            <div class="col-md-6"><label class="form-label">Menu</label><select class="form-select" name="eme_menu_id" required><option value="">Choisir</option><?php foreach (($listes['menus'] ?? []) as $m): ?><option value="<?= (int)$m['men_id'] ?>" <?= (string)($row['eme_menu_id'] ?? '') === (string)$m['men_id'] ? 'selected' : '' ?>><?= htmlspecialchars($m['men_nom']) ?></option><?php endforeach; ?></select></div>
+            <div class="col-md-6"><label class="form-label">Parent</label><select class="form-select" name="eme_parent_id"><option value="">Aucun</option><?php foreach ($parents as $p): ?><option value="<?= (int)$p['eme_id'] ?>" <?= (string)($row['eme_parent_id'] ?? '') === (string)$p['eme_id'] ? 'selected' : '' ?>><?= htmlspecialchars($p['eme_libelle']) ?></option><?php endforeach; ?></select></div>
+            <div class="col-md-8"><label class="form-label">Libellé</label><input class="form-control" name="eme_libelle" value="<?= htmlspecialchars((string)($row['eme_libelle'] ?? '')) ?>" required></div>
+            <div class="col-md-4"><label class="form-label">Position</label><input class="form-control" type="number" name="eme_position" value="<?= htmlspecialchars((string)($row['eme_position'] ?? '100')) ?>"></div>
+            <div class="col-md-6"><label class="form-label">Route</label><input class="form-control" name="eme_route" value="<?= htmlspecialchars((string)($row['eme_route'] ?? '')) ?>" placeholder="/utilisateurs"></div>
+            <div class="col-md-6"><label class="form-label">Icône</label><input class="form-control" name="eme_icone" value="<?= htmlspecialchars((string)($row['eme_icone'] ?? '')) ?>" placeholder="fa fa-users"></div>
+            <div class="col-md-4"><label class="form-label">Module</label><select class="form-select" name="eme_module_id"><option value="">Global</option><?php foreach (($listes['modules'] ?? []) as $m): ?><option value="<?= (int)$m['mod_id'] ?>" <?= (string)($row['eme_module_id'] ?? '') === (string)$m['mod_id'] ? 'selected' : '' ?>><?= htmlspecialchars($m['mod_nom']) ?></option><?php endforeach; ?></select></div>
+            <div class="col-md-4"><label class="form-label">Permission requise</label><select class="form-select" name="eme_permission_requise_id"><option value="">Aucune</option><?php foreach (($listes['permissions'] ?? []) as $p): ?><option value="<?= (int)$p['per_id'] ?>" <?= (string)($row['eme_permission_requise_id'] ?? '') === (string)$p['per_id'] ? 'selected' : '' ?>><?= htmlspecialchars($p['per_code']) ?></option><?php endforeach; ?></select></div>
+            <div class="col-md-4"><label class="form-label">Statut</label><select class="form-select" name="eme_statut_id"><option value="">Sans statut</option><?php foreach (($listes['statuts'] ?? []) as $s): ?><option value="<?= (int)$s['sta_id'] ?>" <?= (string)($row['eme_statut_id'] ?? '') === (string)$s['sta_id'] ? 'selected' : '' ?>><?= htmlspecialchars($s['sta_libelle'] ?? $s['sta_code']) ?></option><?php endforeach; ?></select></div>
+        </div>
+        <div class="d-flex gap-2 mt-3"><button class="btn btn-primary">Enregistrer</button><a class="btn btn-outline-secondary" href="<?= url('/menus/elements') ?>">Retour</a></div>
+    </form>
+    <?php if ($isEdit): ?><form class="mt-3" method="post" action="<?= url('/menus/elements/' . (int)$row['eme_id'] . '/delete') ?>" data-confirm="Supprimer logiquement cet élément ?"><?= $csrfField ?? csrf_field() ?><button class="btn btn-outline-danger">Supprimer logiquement</button></form><?php endif; ?>
+</section>

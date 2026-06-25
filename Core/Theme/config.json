@@ -1,0 +1,216 @@
+{
+  "dev": {
+    "display_errors": false
+  },
+  "brand": {
+    "name": "AutoSAV"
+  },
+  "default_page_settings": {
+    "langue": "fr",
+    "title": "AutoSAV",
+    "multi-langage": true,
+    "meta_refresh_content": 0
+  },
+  "layout": {
+    "collapsed": false,
+    "fixed-header": false,
+    "fixed-footer": false
+  },
+  "i18n": {
+    "default_locale": "fr-fr",
+    "session_key": "app_locale",
+    "param": "lang",
+    "locales": {
+      "fr-fr": { "label": "Français", "flag": "fi fi-fr" },
+      "en-us": { "label": "English", "flag": "fi fi-us" },
+      "de-de": { "label": "Deutsch", "flag": "fi fi-de" },
+      "es-es": { "label": "Español", "flag": "fi fi-es" },
+      "it-it": { "label": "Italiano", "flag": "fi fi-it" },
+      "pt-pt": { "label": "Português", "flag": "fi fi-pt" },
+      "rs-rs": { "label": "Srpski", "flag": "fi fi-rs" }
+    }
+  },
+  "sidebar-search": {
+    "enabled": true,
+    "action": "/search",
+    "placeholder": "Rechercher"
+  },
+  "left_navbar_links": [
+    {
+      "type": "pushmenu",
+      "enabled": true,
+      "user_level": 0
+    },
+    {
+      "url": "/dashboard",
+      "iconClass": "fas fa-home",
+      "text": "Tableau de bord",
+      "enabled": true,
+      "user_level": 0
+    }
+  ],
+  "right_navbar_links": [
+    {
+      "type": "notifications",
+      "enabled": true,
+      "user_level": 0
+    },
+    {
+      "type": "language",
+      "enabled": true,
+      "user_level": 0
+    },
+    {
+      "type": "fullscreen",
+      "enabled": true,
+      "user_level": 0
+    },
+    {
+      "type": "user-menu",
+      "enabled": true,
+      "user_level": 0
+    }
+  ],
+  "sidebar_items": [
+    {
+      "label": "Tableau de bord",
+      "url": "/dashboard",
+      "iconClass": "nav-icon fas fa-tachometer-alt",
+      "user_level": 0
+    },
+    {
+      "label": "Demarrage plateforme",
+      "url": "#",
+      "iconClass": "nav-icon fas fa-rocket",
+      "roles": ["super_administrateur", "super_admin", "SUPERADMIN"],
+      "children": [
+        {
+          "label": "Creer une societe",
+          "url": "/companies/create",
+          "iconClass": "far fa-circle nav-icon"
+        },
+        {
+          "label": "Premier administrateur",
+          "url": "/invitations/premier-administrateur",
+          "iconClass": "far fa-circle nav-icon"
+        },
+        {
+          "label": "Autotests modules",
+          "url": "/autotests",
+          "iconClass": "far fa-circle nav-icon"
+        }
+      ]
+    },
+    {
+      "label": "Utilisateurs",
+      "url": "/users",
+      "iconClass": "nav-icon fas fa-users",
+      "user_level": 0,
+      "permissions": ["users.read", "users.manage", "admin.users"]
+    },
+    {
+      "label": "Sociétés",
+      "url": "/companies",
+      "iconClass": "nav-icon fas fa-building",
+      "user_level": 0,
+      "permissions": ["companies.read", "companies.manage", "admin.companies"]
+    },
+    {
+      "label": "Marques",
+      "url": "/brands",
+      "iconClass": "nav-icon fas fa-tags",
+      "user_level": 0,
+      "permissions": ["brands.read", "brands.manage", "admin.brands"]
+    },
+    {
+      "label": "Administration",
+      "url": "#",
+      "iconClass": "nav-icon fas fa-cogs",
+      "user_level": 80,
+      "children": [
+        {
+          "label": "Utilisateurs societe",
+          "url": "/users",
+          "iconClass": "far fa-circle nav-icon",
+          "permissions": ["users.read", "users.manage", "admin.users"]
+        },
+        {
+          "label": "Rôles",
+          "url": "/admin/roles",
+          "iconClass": "far fa-circle nav-icon",
+          "user_level": 80,
+          "permissions": ["role.gerer"]
+        },
+        {
+          "label": "Fonctions",
+          "url": "/functions",
+          "iconClass": "far fa-circle nav-icon",
+          "permissions": ["functions.read", "functions.manage", "admin.functions"]
+        },
+        {
+          "label": "Competences",
+          "url": "/admin/skills",
+          "iconClass": "far fa-circle nav-icon",
+          "permissions": ["skills.read", "skills.manage", "admin.skills"]
+        },
+        {
+          "label": "Certifications",
+          "url": "/admin/qualifications",
+          "iconClass": "far fa-circle nav-icon",
+          "permissions": ["qualifications.read", "qualifications.manage", "admin.qualifications"]
+        },
+        {
+          "label": "Permissions",
+          "url": "/admin/permissions",
+          "iconClass": "far fa-circle nav-icon",
+          "user_level": 80,
+          "permissions": ["permission.gerer"]
+        },
+        {
+          "label": "Types de societes",
+          "url": "/companies/types",
+          "iconClass": "far fa-circle nav-icon",
+          "roles": ["super_administrateur", "super_admin"]
+        },
+        {
+          "label": "Maintenance",
+          "url": "/maintenance",
+          "iconClass": "far fa-circle nav-icon",
+          "user_level": 80,
+          "permissions": ["maintenance.gerer", "maintenance.executer"]
+        }
+      ]
+    },
+    {
+      "label": "Contexte actif",
+      "url": "/portail/contexte",
+      "iconClass": "nav-icon fas fa-sliders-h",
+      "permissions": ["portail.read", "portail.context.update"]
+    },
+    {
+      "label": "Mon profil",
+      "url": "/profile",
+      "iconClass": "nav-icon fas fa-user",
+      "user_level": 0
+    }
+  ],
+  "base_css": [
+    "/assets/vendor/fontawesome/css/all.min.css",
+    "/assets/vendor/adminlte/css/adminlte.min.css",
+    "/assets/vendor/flag-icons/css/flag-icons.min.css",
+    "/assets/vendor/sweetalert2/sweetalert2.min.css",
+    "/assets/css/app.css"
+  ],
+  "base_js_head": [],
+  "base_js_footer": [
+    "/assets/vendor/jquery/jquery.min.js",
+    "/assets/vendor/bootstrap/js/bootstrap.bundle.min.js",
+    "/assets/vendor/adminlte/js/adminlte.min.js",
+    "/assets/vendor/sweetalert2/sweetalert2.all.min.js",
+    "/assets/js/app.js"
+  ],
+  "footer": {
+    "text": "",
+    "copyright": "AutoSAV"
+  }
+}

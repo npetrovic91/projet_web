@@ -1,0 +1,14 @@
+# AUTOSAV — Exemple cron production
+# Adapter /chemin/vers/autosav et le binaire PHP selon l'hébergement.
+
+# Sauvegarde BDD quotidienne à 02:10
+10 2 * * * cd /chemin/vers/autosav && php bin/backup_database.php >> storage/logs/cron_backup.log 2>&1
+
+# Rotation des journaux quotidienne à 02:30
+30 2 * * * cd /chemin/vers/autosav && php bin/rotate_logs.php >> storage/logs/cron_rotate_logs.log 2>&1
+
+# Maintenance applicative quotidienne à 03:00
+0 3 * * * cd /chemin/vers/autosav && php bin/run_maintenance.php >> storage/logs/cron_maintenance.log 2>&1
+
+# Healthcheck toutes les 5 minutes
+*/5 * * * * cd /chemin/vers/autosav && php bin/health_check.php >> storage/logs/cron_health.log 2>&1

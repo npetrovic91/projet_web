@@ -1,0 +1,28 @@
+Options -Indexes
+
+# ============================================================
+# BLOCAGE EXPLICITE — fichiers de debug et outils temporaires
+# V4.3.1 FIX CRIT-1 : bloc diagnostic_login_demo.php ajouté
+# Ce bloc est vérifié par tests/Unit/V431SecurityHardeningTest.php
+# ============================================================
+<FilesMatch "^diagnostic_login_demo\.php$">
+    Require all denied
+</FilesMatch>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Bloque les dotfiles et dossiers internes si le document root
+    # pointe par erreur sur la racine projet plutôt que sur public/.
+    RewriteRule (^|/)\. - [F,L]
+    RewriteRule ^(?:Core|Modules|config|vendor|storage|database|tests|docs|deploy|bin)(?:/|$) - [F,L,NC]
+    RewriteRule ^(?:composer\.(?:json|lock)|phpunit\.xml(?:\.dist)?|\.env(?:\..*)?|.*\.(?:sql|log|zip|tar|gz|bak|backup|old|orig|ini|phar|sh|cmd|bat|ps1))$ - [F,L,NC]
+
+    # Redirige toutes les requêtes vers le front controller public/index.php.
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
+<FilesMatch "(^\.|composer\.(json|lock)$|phpunit\.xml|\.env|\.(ini|sql|log|zip|tar|gz|bak|backup|old|orig|phar|sh|cmd|bat|ps1)$)">
+    Require all denied
+</FilesMatch>

@@ -1,0 +1,14 @@
+<?php
+$h = static fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
+$sessions = $sessions ?? [];
+$refs = $refs ?? [];
+$filters = $filters ?? [];
+?>
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3"><div><h1 class="h3 mb-1">Sessions utilisateurs</h1><p class="text-muted mb-0">Sessions persistantes, contexte actif et révocation administrative.</p></div><a class="btn btn-outline-secondary" href="<?= url('/verrous') ?>">Verrous</a></div>
+  <form method="get" class="card card-body mb-3"><div class="row g-2 align-items-end"><div class="col-md-3"><label class="form-label">Société active</label><select class="form-select" name="societe_id"><option value="0">Toutes</option><?php foreach (($refs['societes'] ?? []) as $s): ?><option value="<?= (int)$s['soc_id'] ?>" <?= (int)($filters['societe_id'] ?? 0)===(int)$s['soc_id']?'selected':'' ?>><?= $h($s['soc_nom']) ?></option><?php endforeach; ?></select></div><div class="col-md-3"><label class="form-label">État</label><select class="form-select" name="etat_session"><option value="">Toutes</option><option value="active" <?= ($filters['etat_session'] ?? '')==='active'?'selected':'' ?>>Actives</option><option value="expiree" <?= ($filters['etat_session'] ?? '')==='expiree'?'selected':'' ?>>Expirées</option><option value="revoquee" <?= ($filters['etat_session'] ?? '')==='revoquee'?'selected':'' ?>>Révoquées</option></select></div><div class="col-md-3"><button class="btn btn-outline-primary w-100">Filtrer</button></div></div></form>
+  <div class="card"><div class="table-responsive"><table class="table table-striped table-hover mb-0"><thead><tr><th>Utilisateur</th><th>Société active</th><th>Concession</th><th>Marque</th><th>Service</th><th>Équipe</th><th>Dernière activité</th><th>Expire</th><th>Révoquée</th><th></th></tr></thead><tbody>
+    <?php foreach ($sessions as $s): ?><tr><td><?= $h(trim(($s['pui_prenom'] ?? '') . ' ' . ($s['pui_nom'] ?? '')) ?: $s['uti_email_normalise']) ?></td><td><?= $h($s['societe_active_nom'] ?? '—') ?></td><td>#<?= (int)($s['seu_concession_active_id'] ?? 0) ?></td><td>#<?= (int)($s['seu_marque_active_id'] ?? 0) ?></td><td>#<?= (int)($s['seu_service_actif_id'] ?? 0) ?></td><td>#<?= (int)($s['seu_equipe_active_id'] ?? 0) ?></td><td><?= $h($s['seu_derniere_activite_le']) ?></td><td><?= $h($s['seu_expire_le']) ?></td><td><?= $h($s['seu_revoquee_le'] ?? '—') ?></td><td><?php if (empty($s['seu_revoquee_le'])): ?><form method="post" action="<?= url('/verrous/sessions/' . (int)$s['seu_id'] . '/revoke') ?>"><?= $csrfField ?? csrf_field() ?><button class="btn btn-sm btn-outline-danger">Révoquer</button></form><?php endif; ?></td></tr><?php endforeach; ?>
+    <?php if (!$sessions): ?><tr><td colspan="10" class="text-center text-muted py-4">Aucune session.</td></tr><?php endif; ?>
+  </tbody></table></div></div>
+</div>

@@ -1,0 +1,11 @@
+/* AUTOSAV Phase 3 — classes utilitaires pour remplacer progressivement les styles inline. */
+.autosav-center-page{background:#f4f6f9;display:flex;align-items:center;justify-content:center;min-height:100vh}
+.autosav-minimal-wrapper{width:100%;max-width:600px;padding:1rem}
+.autosav-login-box{width:100%;max-width:420px}
+.autosav-form-box{width:100%;max-width:460px}
+.autosav-message-box{width:100%;max-width:520px}
+.autosav-actions-sm{width:110px}
+.autosav-effect-col{width:220px}
+.autosav-inline{display:inline}
+.autosav-uppercase{text-transform:uppercase}
+.autosav-max-160{max-width:160px}

@@ -1,0 +1,107 @@
+/**
+ * AUTOSAV — CSS personnalisé
+ * Fichier : public/assets/css/app.css
+ */
+
+/* Sidebar sélecteurs contextuels */
+.sidebar .select2-container .select2-selection--single {
+    background-color: rgba(255,255,255,0.15);
+    border-color: rgba(255,255,255,0.3);
+    color: #fff;
+    height: 28px;
+}
+.sidebar .select2-container .select2-selection--single .select2-selection__rendered {
+    color: #fff;
+    line-height: 26px;
+    font-size: 0.85rem;
+}
+.sidebar .select2-container .select2-selection--single .select2-selection__arrow {
+    top: 3px;
+}
+
+/* Scroll doux sidebar */
+.sidebar { overflow-y: auto; overflow-x: hidden; }
+
+/* Terms modal */
+.terms-content { font-size: 0.9rem; line-height: 1.6; }
+
+/* Spinner progress bar */
+#autosav-spinner { transform-origin: left center; }
+
+/* Badges navbar */
+.navbar-badge { font-size: 0.6rem; padding: 2px 4px; }
+
+/* Cards hover */
+.card:hover { box-shadow: 0 4px 12px rgba(0,0,0,.15); transition: box-shadow .2s ease; }
+
+/* ============================================================
+   AUTOSAV — Dashboard & Skeleton loaders (L4)
+   ============================================================ */
+
+/* ---- Skeleton placeholder ---- */
+.widget-skeleton .card-header,
+.widget-skeleton .card-body {
+  background: transparent;
+}
+
+.skeleton-line {
+  display:       block;
+  height:        14px;
+  background:    linear-gradient(90deg, #e8e8e8 25%, #f5f5f5 50%, #e8e8e8 75%);
+  background-size: 200% 100%;
+  animation:     skeleton-shimmer 1.4s infinite;
+  border-radius: 4px;
+  margin-bottom: 10px;
+}
+
+.skeleton-title  { height: 18px; width: 60%; }
+.skeleton-short  { width: 40%; }
+
+@keyframes skeleton-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ---- Transitions widgets ---- */
+.dashboard-widget-col {
+  transition: opacity .3s ease;
+}
+
+/* ---- Sélecteurs sidebar contexte ---- */
+.main-sidebar .select2-context + .select2-container {
+  width: 100% !important;
+}
+
+.main-sidebar select.form-control {
+  background-color: rgba(255,255,255,.08);
+  border:           1px solid rgba(255,255,255,.15);
+  color:            #c2c7d0;
+  font-size:        .82rem;
+}
+
+.main-sidebar select.form-control option {
+  background: #343a40;
+  color: #c2c7d0;
+}
+
+#company-spinner { min-height: 18px; }
+
+/* ---- Badge notification navbar ---- */
+#notif-badge {
+  font-size:      .65rem;
+  padding:        2px 5px;
+  top:            -4px;
+  right:          -4px;
+  position:       absolute;
+  background:     #e3342f;
+  border-radius:  50%;
+  color:          #fff;
+  min-width:      18px;
+  text-align:     center;
+  display:        none;
+}
+
+/* ---- Dashboard grid ---- */
+#dashboard-grid {
+  min-height: 200px;
+}

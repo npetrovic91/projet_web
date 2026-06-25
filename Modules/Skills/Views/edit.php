@@ -1,0 +1,11 @@
+<?php
+declare(strict_types=1);
+$e = static fn($v) => htmlspecialchars((string) $v, ENT_QUOTES, 'UTF-8');
+$item = $item ?? [];
+$csrf = $csrf_token ?? '';
+$publicationScopes = $publicationScopes ?? ['interne' => 'Interne société'];
+$currentScope = (string) ($item['cmp_portee_code'] ?? $item['skl_scope_code'] ?? $item['skl_scope'] ?? 'interne');
+if (!isset($publicationScopes[$currentScope])) { $currentScope = array_key_first($publicationScopes) ?: 'interne'; }
+?>
+<section class="content-header"><div class="container-fluid"><div class="row mb-2"><div class="col-sm-6"><h1>Modifier compétence</h1></div><div class="col-sm-6 text-right"><a class="btn btn-sm btn-light" href="/admin/skills">Retour</a></div></div></div></section>
+<section class="content"><div class="container-fluid"><div class="card"><div class="card-header"><h3 class="card-title"><code><?= $e($item['skl_code'] ?? '') ?></code></h3></div><form method="post" action="/admin/skills/<?= (int) ($item['skl_id'] ?? 0) ?>/update"><input type="hidden" name="_csrf_token" value="<?= $e($csrf) ?>"><div class="card-body"><div class="form-group"><label>Code <span class="text-danger">*</span></label><input class="form-control" name="cmp_code" required value="<?= $e($item['skl_code'] ?? '') ?>" style="text-transform:uppercase"></div><div class="form-group"><label>Nom <span class="text-danger">*</span></label><input class="form-control" name="cmp_nom" required value="<?= $e($item['skl_name'] ?? '') ?>"></div><div class="form-group"><label>Description</label><textarea class="form-control" name="cmp_description" rows="4"><?= $e($item['skl_description'] ?? '') ?></textarea></div><div class="form-group"><label>Portée de publication</label><select class="form-control" name="cmp_portee_code"><?php foreach ($publicationScopes as $code => $label): ?><option value="<?= $e($code) ?>" <?= $currentScope === (string) $code ? 'selected' : '' ?>><?= $e($label) ?></option><?php endforeach; ?></select><small class="form-text text-muted"><?= !empty($item['skl_company_name']) ? 'Société propriétaire : ' . $e($item['skl_company_name']) : 'Portée actuelle du référentiel.' ?></small></div></div><div class="card-footer"><button class="btn btn-primary">Enregistrer</button><a class="btn btn-light" href="/admin/skills">Annuler</a></div></form></div></div></section>

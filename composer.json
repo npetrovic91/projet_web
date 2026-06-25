@@ -1,0 +1,38 @@
+{
+  "name": "nenad/autosav",
+  "description": "AUTOSAV - plateforme SaaS modulaire multi-tenant",
+  "type": "project",
+  "license": "proprietary",
+  "autoload": {
+    "psr-4": {
+      "Nenad\\Autosav\\Core\\": "Core/",
+      "Nenad\\Autosav\\Modules\\": "Modules/"
+    },
+    "files": [
+      "Core/Helpers/functions.php"
+    ]
+  },
+  "require": {
+    "php": ">=8.1",
+    "ext-fileinfo": "*",
+    "ext-json": "*",
+    "ext-mbstring": "*",
+    "ext-openssl": "*",
+    "ext-pdo": "*",
+    "ext-pdo_mysql": "*",
+    "phpmailer/phpmailer": "^7.0",
+    "tecnickcom/tcpdf": "^6.10",
+    "monolog/monolog": "^3.9"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^10.0"
+  },
+  "minimum-stability": "stable",
+  "scripts": {
+    "autosav:preflight": "php bin/production_preflight.php",
+    "autosav:backup": "php bin/backup_database.php",
+    "autosav:rotate-logs": "php bin/rotate_logs.php",
+    "autosav:maintenance": "php bin/run_maintenance.php",
+    "autosav:health": "php bin/health_check.php"
+  }
+}

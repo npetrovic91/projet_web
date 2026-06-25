@@ -1,0 +1,13 @@
+/.env
+/vendor/
+/composer.lock
+/storage/backups/*
+/storage/cache/*
+/storage/exports/*
+/storage/logs/*
+/storage/sessions/*
+/storage/uploads/*
+!/storage/*/.gitkeep
+node_modules/
+.DS_Store
+Thumbs.db
