@@ -15,6 +15,19 @@
 */5 * * * * cd /chemin/vers/autosav && php bin/health_check.php >> storage/logs/cron_health.log 2>&1
 
 # ============================================================
+# OPTION : SURVEILLANCE DES CRONS EUX-MÊMES (HealthChecks.io)
+# ============================================================
+# Sans ça, si un cron ne se déclenche plus du tout (panel mal configuré,
+# binaire PHP introuvable...), personne n'est prévenu : check-production.php
+# ne peut détecter un retard que si quelque chose tourne pour le consulter.
+# HealthChecks.io (gratuit, https://healthchecks.io) ping un webhook après
+# chaque exécution réussie et alerte si le ping n'arrive plus à temps.
+# Remplacer UUID-XXX par les identifiants de votre compte, puis ajouter
+# " && curl -fsS --retry 3 https://hc-ping.com/UUID-XXX > /dev/null" à la
+# fin de la commande hPanel correspondante, par exemple :
+#   cd /chemin/vers/autosav && php bin/backup_database.php >> storage/logs/cron_backup.log 2>&1 && curl -fsS --retry 3 https://hc-ping.com/UUID-BACKUP > /dev/null
+
+# ============================================================
 # INSTALLATION SUR HOSTINGER (hébergement mutualisé hPanel)
 # ============================================================
 # Ce fichier est un gabarit : il ne s'installe pas tout seul. `crontab -e`

@@ -1,41 +1,263 @@
-name: CI
+name: CI/CD — AUTOSAV
+
+# Hébergement confirmé pour ce projet : Hostinger mutualisé, sans accès
+# SSH/root garanti. Le job "deploy" (SSH + symlink blue/green) ci-dessous
+# est donc désactivé par défaut (variable de repo DEPLOY_VIA_SSH absente) :
+# il ne s'active que si vous migrez vers un VPS/Cloud et configurez les
+# secrets HOSTINGER_SSH_*. Sur l'hébergement actuel, le déploiement reste
+# manuel via l'artéfact produit par le job "build" — voir
+# RUNBOOK_DEPLOIEMENT.md, Étape 3, Option A.
 
 on:
   push:
     branches: ['**']
   pull_request:
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: 'Déclencher le déploiement SSH (VPS uniquement, nécessite DEPLOY_VIA_SSH)'
+        required: false
+        default: 'false'
+        type: boolean
+
+env:
+  PHP_VERSION: '8.1'
+  COMPOSER_MEMORY_LIMIT: '512M'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  lint-and-test:
+  # ─────────────────────────────────────────────
+  # JOB 1 : Lint + Sécurité statique
+  # ─────────────────────────────────────────────
+  lint:
+    name: "Lint & Sécurité statique"
     runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    timeout-minutes: 10
 
-      - name: Setup PHP
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP ${{ env.PHP_VERSION }}
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.1'
+          php-version: ${{ env.PHP_VERSION }}
           extensions: mbstring, openssl, pdo, pdo_mysql, fileinfo, json, intl, zip, gd
+          ini-values: error_reporting=E_ALL, memory_limit=512M
           coverage: none
+          tools: composer:v2
 
-      - name: Validate composer.json
+      - name: Valider composer.json
         run: composer validate --no-check-publish
 
-      - name: Install dependencies
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: vendor/
+          key: composer-${{ runner.os }}-${{ env.PHP_VERSION }}-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            composer-${{ runner.os }}-${{ env.PHP_VERSION }}-
+
+      - name: Installer les dépendances
         run: composer install --no-interaction --no-progress --prefer-dist
 
-      - name: Lint PHP syntax (Core/, Modules/, config/, bin/, scripts/, tests/)
+      # CORRECTIF (audit DevOps 2026-06-26) : aucune vérification de CVE
+      # n'existait avant dans la CI — une dépendance vulnérable pouvait
+      # être ajoutée/mise à jour sans qu'aucun check ne le signale.
+      - name: "Audit sécurité Composer (CVE)"
+        run: composer audit --no-interaction
+
+      - name: "Lint syntaxe PHP (Core/, Modules/, config/, bin/, scripts/, tests/)"
         run: |
-          set -e
           find Core Modules config bin scripts tests -name '*.php' -print0 \
             | xargs -0 -n1 php -l
 
-      - name: Run test suite (tests/Unit/*.php)
+      - name: "PHPStan — niveau 5 + baseline"
+        run: composer run stan -- --error-format=github
+
+  # ─────────────────────────────────────────────
+  # JOB 2 : Tests unitaires
+  # ─────────────────────────────────────────────
+  test:
+    name: "Tests unitaires"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: lint
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP ${{ env.PHP_VERSION }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mbstring, openssl, pdo, pdo_mysql, fileinfo, json, intl, zip, gd
+          coverage: none
+          tools: composer:v2
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: vendor/
+          key: composer-${{ runner.os }}-${{ env.PHP_VERSION }}-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            composer-${{ runner.os }}-${{ env.PHP_VERSION }}-
+
+      - name: Installer les dépendances
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: "Suite de tests (tests/Unit/*.php)"
         run: composer run test
 
-      - name: Static analysis (PHPStan, niveau 5 + baseline)
-        run: composer run stan
-
-      - name: Production readiness check (informational — no real .env in CI)
+      - name: "Vérification de préparation production (informatif — pas de vrai .env en CI)"
         run: php scripts/check-production.php || true
+
+  # ─────────────────────────────────────────────
+  # JOB 3 : Build production (artéfact téléchargeable)
+  # Le téléchargement + déploiement manuel via hPanel reste la voie
+  # normale sur l'hébergement mutualisé actuel (RUNBOOK, Étape 3 Option A).
+  # ─────────────────────────────────────────────
+  build:
+    name: "Build production"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [lint, test]
+    if: >
+      github.ref == 'refs/heads/main' ||
+      github.event_name == 'workflow_dispatch'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP ${{ env.PHP_VERSION }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mbstring, openssl, pdo, pdo_mysql, fileinfo, json, intl, zip, gd
+          coverage: none
+          tools: composer:v2
+
+      - name: "Installer dépendances production (--no-dev)"
+        run: |
+          composer install \
+            --no-interaction \
+            --no-progress \
+            --prefer-dist \
+            --no-dev \
+            --optimize-autoloader \
+            --classmap-authoritative
+
+      # Ne retirer que les données de démonstration (database/seeds/) et le
+      # tooling de dev — JAMAIS database/migrations/ (nécessaire à
+      # bin/migrate.php sur la cible, voir HIGH/structure du dépôt).
+      - name: "Nettoyer l'artéfact de déploiement"
+        run: |
+          rm -rf .git .github tests docs .env .env.example database/seeds
+
+      - name: "Préparer les dossiers storage/"
+        run: |
+          mkdir -p storage/{logs,sessions,cache,uploads,exports,backups}
+          for d in storage/logs storage/sessions storage/cache storage/uploads storage/exports storage/backups; do
+            touch "$d/.gitkeep"
+          done
+
+      - name: "Créer l'archive de déploiement"
+        run: |
+          tar --exclude='.git' --exclude='.github' -czf autosav-${{ github.sha }}.tar.gz .
+
+      - name: "Upload artéfact"
+        uses: actions/upload-artifact@v4
+        with:
+          name: autosav-production-${{ github.sha }}
+          path: autosav-${{ github.sha }}.tar.gz
+          retention-days: 30
+
+  # ─────────────────────────────────────────────
+  # JOB 4 : Déploiement SSH (VPS/Cloud UNIQUEMENT)
+  # Désactivé sur l'hébergement mutualisé actuel : nécessite un accès
+  # root/SSH complet et les secrets HOSTINGER_SSH_HOST/_USER/_KEY,
+  # HOSTINGER_DEPLOY_PATH, HEALTHCHECK_TOKEN. Pour l'activer après une
+  # migration VPS : définir la variable de repo DEPLOY_VIA_SSH=true
+  # (Settings → Secrets and variables → Actions → Variables).
+  # ─────────────────────────────────────────────
+  deploy:
+    name: "Déploiement production (VPS uniquement)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: build
+    environment:
+      name: production
+      url: https://devnenad.fr
+    if: >
+      vars.DEPLOY_VIA_SSH == 'true' &&
+      github.ref == 'refs/heads/main' &&
+      (
+        github.event_name == 'push' ||
+        (github.event_name == 'workflow_dispatch' && inputs.deploy == 'true')
+      )
+
+    steps:
+      - name: Télécharger l'artéfact
+        uses: actions/download-artifact@v4
+        with:
+          name: autosav-production-${{ github.sha }}
+
+      - name: Configurer la clé SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.HOSTINGER_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.HOSTINGER_SSH_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: "Déployer via SSH (blue/green simplifié)"
+        env:
+          SSH_HOST: ${{ secrets.HOSTINGER_SSH_HOST }}
+          SSH_USER: ${{ secrets.HOSTINGER_SSH_USER }}
+          DEPLOY_PATH: ${{ secrets.HOSTINGER_DEPLOY_PATH }}
+          SHA: ${{ github.sha }}
+        run: |
+          scp -i ~/.ssh/deploy_key \
+              autosav-${SHA}.tar.gz \
+              ${SSH_USER}@${SSH_HOST}:/tmp/autosav-${SHA}.tar.gz
+
+          ssh -i ~/.ssh/deploy_key ${SSH_USER}@${SSH_HOST} \
+            "SHA='${SHA}' DEPLOY_PATH='${DEPLOY_PATH}' bash -s" << 'REMOTE'
+            set -euo pipefail
+            NEW_RELEASE="${DEPLOY_PATH}/releases/${SHA}"
+            CURRENT="${DEPLOY_PATH}/current"
+            SHARED="${DEPLOY_PATH}/shared"
+
+            mkdir -p "${SHARED}/storage"/{logs,sessions,cache,uploads,exports,backups}
+            mkdir -p "${DEPLOY_PATH}/releases"
+
+            mkdir -p "${NEW_RELEASE}"
+            tar -xzf "/tmp/autosav-${SHA}.tar.gz" -C "${NEW_RELEASE}"
+            rm -f "/tmp/autosav-${SHA}.tar.gz"
+
+            ln -sfn "${SHARED}/.env" "${NEW_RELEASE}/.env"
+            rm -rf "${NEW_RELEASE}/storage"
+            ln -sfn "${SHARED}/storage" "${NEW_RELEASE}/storage"
+
+            php "${NEW_RELEASE}/bin/production_preflight.php"
+            php "${NEW_RELEASE}/bin/migrate.php"
+
+            ln -sfn "${NEW_RELEASE}" "${CURRENT}.next"
+            mv -Tf "${CURRENT}.next" "${CURRENT}"
+
+            ls -1dt "${DEPLOY_PATH}/releases"/*/ | tail -n +6 | xargs -r rm -rf
+
+            echo "Déploiement ${SHA} réussi"
+REMOTE
+
+      - name: "Vérifier le health check post-déploiement"
+        run: |
+          sleep 5
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+            "https://devnenad.fr/health.php?token=${{ secrets.HEALTHCHECK_TOKEN }}")
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "Health check échoué (HTTP $HTTP_CODE)"
+            exit 1
+          fi
+          echo "Health check OK (HTTP $HTTP_CODE)"

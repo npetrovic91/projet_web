@@ -44,10 +44,18 @@ defined('PRODUCTION_HEALTH_TOKEN') || define('PRODUCTION_HEALTH_TOKEN', env_stri
 // Un jeton laissé à sa valeur d'exemple est public (présent dans .env.example,
 // la documentation de déploiement et le rapport d'audit) : il ne doit JAMAIS
 // être traité comme un secret valide, même si quelqu'un le soumet volontairement.
+// CORRECTIF HIGH-3 (audit DevOps 2026-06-26) : .env.production.template
+// utilise désormais "REMPLACER_TOKEN_HEALTHCHECK_64_CHARS" comme texte de
+// placeholder — ajouté à la liste reconnue pour qu'un oubli de remplacement
+// reste bloqué comme avant (sinon ce nouveau texte, public dans le dépôt,
+// passerait inaperçu du filtre). Un vrai token (bin2hex(random_bytes(32)))
+// fait toujours 64 caractères hexadécimaux : une valeur plus courte ou
+// contenant un caractère non hexadécimal est aussi traitée comme suspecte.
 defined('PRODUCTION_HEALTH_TOKEN_IS_PLACEHOLDER') || define(
     'PRODUCTION_HEALTH_TOKEN_IS_PLACEHOLDER',
     PRODUCTION_HEALTH_TOKEN === ''
-    || preg_match('/^(changer_ce_token|change_me|changeme|change-me|todo|exemple|example|placeholder)/i', PRODUCTION_HEALTH_TOKEN) === 1
+    || preg_match('/^(changer_ce_token|change_me|changeme|change-me|todo|exemple|example|placeholder|remplacer)/i', PRODUCTION_HEALTH_TOKEN) === 1
+    || !preg_match('/^[0-9a-f]{64}$/i', PRODUCTION_HEALTH_TOKEN)
 );
 
 defined('PRODUCTION_HEALTH_PUBLIC') || define('PRODUCTION_HEALTH_PUBLIC', env_bool('HEALTHCHECK_PUBLIC', false));

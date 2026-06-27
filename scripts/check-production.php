@@ -32,7 +32,8 @@ if (!is_file($root . '/.env')) {
     preg_match('/^ENCRYPTION_KEY=(.*)$/m', $envContent, $keyMatch);
     $appEnv = trim($appEnvMatch[1] ?? 'production', " \t\n\r\0\x0B\"'");
     $encryptionKey = trim($keyMatch[1] ?? '', " \t\n\r\0\x0B\"'");
-    $placeholder = preg_match('/^(base64:)?(generer_|changer_|change_|CHANGE_ME|autosav-change-me|autosav-dev-only-key)/i', $encryptionKey) === 1;
+    // "remplacer" ajouté : .env.production.template utilise ce préfixe pour ses placeholders.
+    $placeholder = preg_match('/^(base64:)?(generer_|changer_|change_|remplacer|CHANGE_ME|autosav-change-me|autosav-dev-only-key)/i', $encryptionKey) === 1;
     if ($appEnv === 'production' && ($encryptionKey === '' || $placeholder)) {
         $ok = false;
         $errors[] = 'ENCRYPTION_KEY absente ou placeholder dans .env en production.';
