@@ -64,14 +64,19 @@ class UserModel
                 ]
             );
         } catch (\Throwable $e) {
-            // L'audit ne doit jamais faire échouer l'opération métier elle-même ;
-            // l'incident est tracé dans les journaux techniques.
+            // L'audit ne doit jamais faire échouer l'opération métier elle-même.
+            // CORRECTIF (section 3 du roadmap, "échecs d'audit avalés
+            // silencieusement") : un échec d'écriture dans sav_journaux_audit
+            // est un incident d'intégrité (perte de traçabilité), pas un
+            // évènement d'audit comme un autre — il était noyé dans le canal
+            // 'audit' parmi des milliers d'entrées de succès routinières. Il
+            // est désormais aussi journalisé en 'critical' sur le canal
+            // 'error', celui que surveillent RUNBOOK_DEPLOIEMENT.md
+            // ("make logs-error") et l'équipe en priorité.
             if (function_exists('logger')) {
-                logger('audit')->error('Échec écriture sav_journaux_audit (Users)', [
-                    'action' => $action,
-                    'target_id' => $targetId,
-                    'error' => $e->getMessage(),
-                ]);
+                $context = ['action' => $action, 'target_id' => $targetId, 'error' => $e->getMessage()];
+                logger('audit')->error('Échec écriture sav_journaux_audit (Users)', $context);
+                logger('error')->critical('Échec écriture sav_journaux_audit (Users) — intégrité de la piste d\'audit compromise', $context);
             }
         }
     }

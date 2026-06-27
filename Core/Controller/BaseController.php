@@ -219,9 +219,12 @@ abstract class BaseController
     }
 
     /**
-     * Verifie la validite du token CSRF.
+     * Verifie la validite du token CSRF (guard : interrompt la requete en
+     * cas d'echec). Methode canonique — 31 appelants existants contre 3
+     * pour l'ancien nom requireCsrf() (section 3 du roadmap production,
+     * "deux noms differents pour la meme operation CSRF a unifier").
      */
-    protected function requireCsrf(): void
+    protected function validateCsrf(): void
     {
         if (!CsrfProtection::validate()) {
             if ($this->isAjax()) {
@@ -235,11 +238,12 @@ abstract class BaseController
     }
 
     /**
-     * Alias de requireCsrf() pour coherence de nommage.
+     * @deprecated Alias retro-compatible de validateCsrf(). Tout nouveau
+     * code doit utiliser validateCsrf() directement.
      */
-    protected function validateCsrf(): void
+    protected function requireCsrf(): void
     {
-        $this->requireCsrf();
+        $this->validateCsrf();
     }
 
     /**

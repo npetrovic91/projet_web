@@ -41,7 +41,7 @@ class VerrousController extends BaseController
     public function store(): void
     {
         $this->requirePermission('verrou.gerer');
-        $this->requireCsrf();
+        $this->validateCsrf();
         $this->service->creerVerrou($_POST, (int)($this->userId() ?? 0));
         $this->flash('success', 'Verrou créé.');
         $this->redirect('/verrous');
@@ -50,7 +50,7 @@ class VerrousController extends BaseController
     public function release(int|string $id): void
     {
         $this->requirePermission('verrou.gerer');
-        $this->requireCsrf();
+        $this->validateCsrf();
         $this->service->libererVerrou((int)$id, (int)($this->userId() ?? 0), (string)($_POST['raison'] ?? ''));
         $this->flash('success', 'Verrou libéré.');
         $this->redirect('/verrous');
@@ -73,7 +73,7 @@ class VerrousController extends BaseController
     public function revokeSession(int|string $id): void
     {
         $this->requirePermission('verrou.gerer');
-        $this->requireCsrf();
+        $this->validateCsrf();
         $this->service->revoquerSession((int)$id, (int)($this->userId() ?? 0), (string)($_POST['motif'] ?? ''));
         $this->flash('success', 'Session révoquée.');
         $this->redirect('/verrous/sessions');
