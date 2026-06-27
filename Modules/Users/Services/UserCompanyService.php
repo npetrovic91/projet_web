@@ -6,6 +6,7 @@ namespace Nenad\Autosav\Modules\Users\Services;
 use Nenad\Autosav\Core\Services\Contracts\ServiceInterface;
 
 use Nenad\Autosav\Core\Database\Database;
+use Nenad\Autosav\Modules\Notifications\Services\ActionNotifier;
 use Nenad\Autosav\Modules\Users\Models\UserCompanyHistoryModel;
 use Nenad\Autosav\Modules\Users\Models\UserCompanyModel;
 use Nenad\Autosav\Modules\Users\Models\UserModel;
@@ -15,15 +16,18 @@ use PDO;
 class UserCompanyService implements ServiceInterface{
     private Database $db;
     private PDO $pdo;
+    private ActionNotifier $notifier;
 
     public function __construct(
         private ?UserCompanyModel $companies = null,
         private ?UserCompanyHistoryModel $history = null,
-        private ?UserModel $users = null
+        private ?UserModel $users = null,
+        ?ActionNotifier $notifier = null
     ) {
         $this->db = Database::getInstance();
         $this->pdo = $this->db->getPdo();
         $this->users ??= new UserModel($this->db);
+        $this->notifier = $notifier ?? new ActionNotifier();
     }
 
     public function getUserCompanies(int $userId): array
@@ -61,6 +65,19 @@ class UserCompanyService implements ServiceInterface{
         }
         if ($isPrimary) {
             $this->pdo->prepare('UPDATE sav_utilisateurs SET uti_societe_active_id = ? WHERE uti_id = ?')->execute([$companyId, $userId]);
+        }
+        // CORRECTIF 2.4 (notifications in-app) : l'utilisateur n'était
+        // jamais informé d'un rattachement à une nouvelle société.
+        if (!$exists && $userId !== $actionUserId) {
+            $this->notifier->notifierUtilisateur(
+                $userId,
+                'utilisateur.societe_rattachee',
+                'Nouvelle société rattachée à votre compte',
+                'Vous avez été rattaché à une nouvelle société.',
+                ['company_id' => $companyId],
+                $companyId,
+                $actionUserId ?: null
+            );
         }
         return ['success' => true, 'message' => 'Société rattachée.'];
     }

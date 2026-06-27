@@ -6,6 +6,7 @@ namespace Nenad\Autosav\Modules\Users\Services;
 use Nenad\Autosav\Core\Services\Contracts\ServiceInterface;
 
 use Nenad\Autosav\Core\Database\Database;
+use Nenad\Autosav\Modules\Notifications\Services\ActionNotifier;
 use Nenad\Autosav\Modules\Users\Models\UserHierarchyModel;
 use Nenad\Autosav\Modules\Users\Models\UserModel;
 use PDO;
@@ -14,12 +15,14 @@ use PDO;
 class UserHierarchyService implements ServiceInterface{
     private UserModel $users;
     private PDO $pdo;
+    private ActionNotifier $notifier;
 
-    public function __construct(private ?UserHierarchyModel $hierarchy = null)
+    public function __construct(private ?UserHierarchyModel $hierarchy = null, ?ActionNotifier $notifier = null)
     {
         $db = Database::getInstance();
         $this->pdo = $db->getPdo();
         $this->users = new UserModel($db);
+        $this->notifier = $notifier ?? new ActionNotifier();
     }
 
     public function getManagers(int $userId): array
@@ -49,6 +52,20 @@ class UserHierarchyService implements ServiceInterface{
         $stmt->bindValue(':statut', $this->users->statutId('general', 'actif'), PDO::PARAM_INT);
         $stmt->bindValue(':action', $actionUserId ?: null, $actionUserId ? PDO::PARAM_INT : PDO::PARAM_NULL);
         $stmt->execute();
+        // CORRECTIF 2.4 (notifications in-app) : l'utilisateur n'était
+        // jamais informé qu'un nouveau supérieur hiérarchique lui était
+        // assigné.
+        if ($userId !== $actionUserId) {
+            $this->notifier->notifierUtilisateur(
+                $userId,
+                'utilisateur.superieur_assigne',
+                'Nouveau supérieur hiérarchique assigné',
+                'Un nouveau supérieur hiérarchique vous a été assigné.',
+                ['manager_id' => $managerId, 'company_id' => $companyId],
+                $companyId,
+                $actionUserId ?: null
+            );
+        }
         return ['success' => true, 'message' => 'Supérieur hiérarchique ajouté.'];
     }
 

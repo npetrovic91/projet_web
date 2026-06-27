@@ -9,6 +9,7 @@ use Nenad\Autosav\Core\Database\Database;
 use Nenad\Autosav\Modules\GDPR\Models\GdprActionModel;
 use Nenad\Autosav\Modules\GDPR\Models\GdprExportModel;
 use Nenad\Autosav\Modules\GDPR\Models\GdprRequestModel;
+use Nenad\Autosav\Modules\Notifications\Services\ActionNotifier;
 use Nenad\Autosav\Modules\Profile\Models\GdprRequestModel as ProfileGdprRequestModel;
 use Nenad\Autosav\Modules\Profile\Services\ProfileService;
 use Nenad\Autosav\Modules\Qualifications\Models\QualificationModel;
@@ -24,13 +25,16 @@ use Nenad\Autosav\Modules\Users\Services\UserCompanyService;
 
 class GdprService implements ServiceInterface{
     private ProfileService $profiles;
+    private ActionNotifier $notifier;
 
     public function __construct(
         private GdprRequestModel $requests,
         private GdprActionModel $actions,
         private GdprExportModel $exports,
-        private UserModel $users
+        private UserModel $users,
+        ?ActionNotifier $notifier = null
     ) {
+        $this->notifier = $notifier ?? new ActionNotifier();
         $companyModel = new UserCompanyModel();
         $historyModel = new UserCompanyHistoryModel();
         $this->profiles = new ProfileService(
@@ -52,6 +56,12 @@ class GdprService implements ServiceInterface{
         return $this->requests->findRequest($requestId);
     }
 
+    /**
+     * CORRECTIF 2.4 (notifications in-app, 2026-06-27) : la personne ayant
+     * fait une demande RGPD n'était jamais informée de la décision —
+     * problématique au-delà de l'UX : le RGPD lui-même impose d'informer
+     * la personne concernée du traitement de sa demande.
+     */
     public function acceptRequest(int $requestId, int $adminId, string $ip, string $response): bool
     {
         $request = $this->requests->findRequest($requestId);
@@ -59,7 +69,19 @@ class GdprService implements ServiceInterface{
             return false;
         }
         $this->requests->updateStatus($requestId, 'accepted', $adminId, $response);
-        $this->actions->record($requestId, (int) ($request['grq_user_id'] ?? 0), 'request_accepted', $adminId, $ip, ['response' => $response]);
+        $userId = (int) ($request['grq_user_id'] ?? 0);
+        $this->actions->record($requestId, $userId, 'request_accepted', $adminId, $ip, ['response' => $response]);
+        if ($userId > 0) {
+            $this->notifier->notifierUtilisateur(
+                $userId,
+                'gdpr.demande_acceptee',
+                'Votre demande RGPD a été acceptée',
+                trim('Votre demande a été acceptée. ' . $response),
+                ['request_id' => $requestId],
+                null,
+                $adminId
+            );
+        }
         return true;
     }
 
@@ -70,7 +92,19 @@ class GdprService implements ServiceInterface{
             return false;
         }
         $this->requests->updateStatus($requestId, 'rejected', $adminId, null, $reason);
-        $this->actions->record($requestId, (int) ($request['grq_user_id'] ?? 0), 'request_rejected', $adminId, $ip, ['reason' => $reason]);
+        $userId = (int) ($request['grq_user_id'] ?? 0);
+        $this->actions->record($requestId, $userId, 'request_rejected', $adminId, $ip, ['reason' => $reason]);
+        if ($userId > 0) {
+            $this->notifier->notifierUtilisateur(
+                $userId,
+                'gdpr.demande_rejetee',
+                'Votre demande RGPD a été rejetée',
+                trim('Votre demande a été rejetée. Motif : ' . $reason),
+                ['request_id' => $requestId],
+                null,
+                $adminId
+            );
+        }
         return true;
     }
 

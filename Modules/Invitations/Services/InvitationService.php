@@ -6,13 +6,16 @@ namespace Nenad\Autosav\Modules\Invitations\Services;
 use Nenad\Autosav\Core\Services\Contracts\ServiceInterface;
 
 use Nenad\Autosav\Modules\Invitations\Models\InvitationModel;
+use Nenad\Autosav\Modules\Notifications\Services\ActionNotifier;
 
 class InvitationService implements ServiceInterface{
     private InvitationModel $model;
+    private ActionNotifier $notifier;
 
-    public function __construct()
+    public function __construct(?ActionNotifier $notifier = null)
     {
         $this->model = new InvitationModel();
+        $this->notifier = $notifier ?? new ActionNotifier();
     }
 
     public function statistiques(?int $societeId = null): array { return $this->model->statistiques($societeId); }
@@ -98,11 +101,28 @@ class InvitationService implements ServiceInterface{
         if (strlen($password) < 12 || $password !== (string)($post['password_confirmation'] ?? '')) {
             throw new \InvalidArgumentException('Le mot de passe doit contenir au moins 12 caractères et être confirmé.');
         }
-        return $this->model->creerUtilisateurDepuisInvitation($invitation, [
+        $newUserId = $this->model->creerUtilisateurDepuisInvitation($invitation, [
             'password' => $password,
             'nom' => $post['nom'] ?? '',
             'prenom' => $post['prenom'] ?? '',
         ], $ip, $userAgent);
+
+        // CORRECTIF 2.4 (notifications in-app) : la personne ayant envoyé
+        // l'invitation n'était jamais informée de son acceptation.
+        $inviterId = (int) ($invitation['inv_cree_par_utilisateur_id'] ?? 0);
+        if ($inviterId > 0) {
+            $this->notifier->notifierUtilisateur(
+                $inviterId,
+                'invitation.acceptee',
+                'Invitation acceptée',
+                'L\'invitation envoyée à ' . (string) $invitation['inv_email'] . ' a été acceptée.',
+                ['invitation_id' => (int) $invitation['inv_id'], 'nouvel_utilisateur_id' => $newUserId],
+                isset($invitation['inv_societe_id']) ? (int) $invitation['inv_societe_id'] : null,
+                null
+            );
+        }
+
+        return $newUserId;
     }
 
     public function creerPremierAdministrateur(array $post, ?int $userId, ?string $ip): array
