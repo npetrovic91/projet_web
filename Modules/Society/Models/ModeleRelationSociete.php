@@ -90,12 +90,14 @@ class ModeleRelationSociete extends BaseModel
              VALUES (:parent, :enfant, :type_id, CURDATE(), 1, NOW(), :user_id)",
             ['parent' => $idParent, 'enfant' => $idEnfant, 'type_id' => $idType, 'user_id' => $idUtilisateur ?: null]
         );
-        return (int) $this->db->lastInsertId();
+        $id = (int) $this->db->lastInsertId();
+        $this->journaliser('relation_societe.creer', $id, $idUtilisateur, ['parent' => $idParent, 'enfant' => $idEnfant, 'type' => $type]);
+        return $id;
     }
 
     public function desactiver(int $idRelation, int $idUtilisateur): bool
     {
-        return $this->db->execute(
+        $ok = $this->db->execute(
             "UPDATE sav_relations_societes
              SET rso_termine_le = COALESCE(rso_termine_le, CURDATE()),
                  rso_statut_id = 4,
@@ -107,6 +109,10 @@ class ModeleRelationSociete extends BaseModel
                AND rso_supprime_le IS NULL",
             ['id' => $idRelation, 'user_id' => $idUtilisateur ?: null]
         );
+        if ($ok) {
+            $this->journaliser('relation_societe.desactiver', $idRelation, $idUtilisateur, []);
+        }
+        return $ok;
     }
 
     /**
@@ -192,5 +198,28 @@ class ModeleRelationSociete extends BaseModel
             ]
         );
         return (int) $this->db->lastInsertId();
+    }
+
+    /** CORRECTIF 2.3 (audit) : aucune mutation n'était journalisée. */
+    private function journaliser(string $action, int $id, ?int $userId, array $metadata): void
+    {
+        try {
+            $this->db->execute(
+                'INSERT INTO sav_journaux_audit
+                    (jau_utilisateur_id, jau_action, jau_table_cible, jau_id_cible, jau_adresse_ip, jau_metadata_json, jau_cree_le)
+                 VALUES
+                    (:user_id, :action, :table_cible, :id_cible, :ip, :metadata, NOW())',
+                [
+                    'user_id' => $userId ?: null,
+                    'action' => $action,
+                    'table_cible' => 'sav_relations_societes',
+                    'id_cible' => $id ?: null,
+                    'ip' => function_exists('client_ip') ? @inet_pton((string) client_ip()) : null,
+                    'metadata' => json_encode($metadata, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                ]
+            );
+        } catch (\Throwable) {
+            // L'audit ne doit jamais bloquer une opération métier.
+        }
     }
 }

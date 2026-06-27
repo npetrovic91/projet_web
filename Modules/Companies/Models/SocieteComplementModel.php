@@ -166,17 +166,29 @@ class SocieteComplementModel
                 'cree_par'      => $userId ?: null,
             ]
         );
-        return (int) $this->db->lastInsertId();
+        $newId = (int) $this->db->lastInsertId();
+        // CORRECTIF 2.3 (audit) : jamais l'IBAN/RIB complet en clair dans le
+        // journal — seuls les 4 derniers caractères, suffisants pour
+        // identifier le compte sans dupliquer la donnée sensible.
+        $this->journaliser('compte_bancaire.creer', 'sav_societes_comptes_bancaires', $newId, $userId, [
+            'societe_id' => $socId,
+            'iban_suffixe' => substr((string) $this->str($data['scb_iban'] ?? ''), -4),
+        ]);
+        return $newId;
     }
 
     public function supprimerCompteBancaire(int $scbId, int $socId, int $userId): bool
     {
-        return $this->db->execute(
+        $ok = $this->db->execute(
             "UPDATE sav_societes_comptes_bancaires
              SET scb_supprime_le = NOW(), scb_supprime_par_utilisateur_id = :uid
              WHERE scb_id = :id AND scb_societe_id = :soc_id AND scb_supprime_le IS NULL",
             ['id' => $scbId, 'soc_id' => $socId, 'uid' => $userId ?: null]
         );
+        if ($ok) {
+            $this->journaliser('compte_bancaire.supprimer', 'sav_societes_comptes_bancaires', $scbId, $userId, ['societe_id' => $socId]);
+        }
+        return $ok;
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -363,6 +375,34 @@ class SocieteComplementModel
             } else {
                 $stmt->bindValue(":{$key}", $val, PDO::PARAM_STR);
             }
+        }
+    }
+
+    /**
+     * CORRECTIF 2.3 (audit, 2026-06-27) : les mutations sur les coordonnées
+     * bancaires d'une société (IBAN/RIB/BIC) n'étaient pas journalisées.
+     * Ne jamais inclure la donnée bancaire complète dans $metadata — voir
+     * les appelants (suffixe IBAN uniquement).
+     */
+    private function journaliser(string $action, string $table, int $id, ?int $userId, array $metadata): void
+    {
+        try {
+            $this->db->execute(
+                'INSERT INTO sav_journaux_audit
+                    (jau_utilisateur_id, jau_action, jau_table_cible, jau_id_cible, jau_adresse_ip, jau_metadata_json, jau_cree_le)
+                 VALUES
+                    (:user_id, :action, :table_cible, :id_cible, :ip, :metadata, NOW())',
+                [
+                    'user_id' => $userId ?: null,
+                    'action' => $action,
+                    'table_cible' => $table,
+                    'id_cible' => $id ?: null,
+                    'ip' => function_exists('client_ip') ? @inet_pton((string) client_ip()) : null,
+                    'metadata' => json_encode($metadata, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                ]
+            );
+        } catch (\Throwable) {
+            // L'audit ne doit jamais bloquer une opération métier.
         }
     }
 }

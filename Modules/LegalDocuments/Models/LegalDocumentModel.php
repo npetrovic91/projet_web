@@ -113,7 +113,9 @@ class LegalDocumentModel extends BaseModel
                 'user_id' => $userId ?: null,
             ]
         );
-        return (int)$this->pdo->lastInsertId();
+        $newId = (int)$this->pdo->lastInsertId();
+        $this->journaliser('document_juridique.creer', $newId, $userId, ['type' => $data['dju_type_document'], 'titre' => $data['dju_titre']]);
+        return $newId;
     }
 
     public function modifier(int $id, array $input, int $userId = 0): bool
@@ -147,7 +149,11 @@ class LegalDocumentModel extends BaseModel
                 'user_id' => $userId ?: null,
             ]
         );
-        return $this->db->rowCount() > 0;
+        $ok = $this->db->rowCount() > 0;
+        if ($ok) {
+            $this->journaliser('document_juridique.modifier', $id, $userId, ['version' => $data['dju_version']]);
+        }
+        return $ok;
     }
 
     public function supprimer(int $id, int $userId = 0): bool
@@ -158,7 +164,11 @@ class LegalDocumentModel extends BaseModel
               WHERE dju_id = :id AND dju_supprime_le IS NULL',
             ['id' => $id, 'user_id' => $userId ?: null]
         );
-        return $this->db->rowCount() > 0;
+        $ok = $this->db->rowCount() > 0;
+        if ($ok) {
+            $this->journaliser('document_juridique.supprimer', $id, $userId, []);
+        }
+        return $ok;
     }
 
     public function lierSociete(int $documentId, int $companyId, bool $mandatory, int $priority = 100, ?int $statusId = null): void
@@ -175,6 +185,7 @@ class LegalDocumentModel extends BaseModel
                 'status_id' => $statusId,
             ]
         );
+        $this->journaliser('document_juridique.lier_societe', $documentId, null, ['company_id' => $companyId, 'mandatory' => $mandatory]);
     }
 
     public function liensSocietes(int $documentId): array
@@ -265,5 +276,28 @@ class LegalDocumentModel extends BaseModel
     {
         $value = trim((string)$value);
         return preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) ? $value : null;
+    }
+
+    /** CORRECTIF 2.3 (audit) : aucune mutation n'était journalisée. */
+    private function journaliser(string $action, int $id, ?int $userId, array $metadata): void
+    {
+        try {
+            $this->db->execute(
+                'INSERT INTO sav_journaux_audit
+                    (jau_utilisateur_id, jau_action, jau_table_cible, jau_id_cible, jau_adresse_ip, jau_metadata_json, jau_cree_le)
+                 VALUES
+                    (:user_id, :action, :table_cible, :id_cible, :ip, :metadata, NOW())',
+                [
+                    'user_id' => $userId ?: null,
+                    'action' => $action,
+                    'table_cible' => 'sav_documents_juridiques',
+                    'id_cible' => $id ?: null,
+                    'ip' => function_exists('client_ip') ? @inet_pton((string) client_ip()) : null,
+                    'metadata' => json_encode($metadata, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                ]
+            );
+        } catch (\Throwable) {
+            // L'audit ne doit jamais bloquer une opération métier.
+        }
     }
 }

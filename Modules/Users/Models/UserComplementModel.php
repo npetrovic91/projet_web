@@ -153,17 +153,28 @@ class UserComplementModel
                 'cree_par'      => $userId ?: null,
             ]
         );
-        return (int) $this->db->lastInsertId();
+        $newId = (int) $this->db->lastInsertId();
+        // CORRECTIF 2.3 (audit) : jamais l'IBAN/RIB complet en clair dans le
+        // journal — seuls les 4 derniers caractères.
+        $this->journaliser('compte_bancaire.creer', 'sav_utilisateurs_comptes_bancaires', $newId, $userId, [
+            'utilisateur_id' => $utiId,
+            'iban_suffixe' => substr((string) $this->str($data['ucb_iban'] ?? ''), -4),
+        ]);
+        return $newId;
     }
 
     public function supprimerCompteBancaire(int $ucbId, int $utiId, int $userId): bool
     {
-        return $this->db->execute(
+        $ok = $this->db->execute(
             "UPDATE sav_utilisateurs_comptes_bancaires
              SET ucb_supprime_le = NOW(), ucb_supprime_par_utilisateur_id = :uid
              WHERE ucb_id = :id AND ucb_utilisateur_id = :uti_id AND ucb_supprime_le IS NULL",
             ['id' => $ucbId, 'uti_id' => $utiId, 'uid' => $userId ?: null]
         );
+        if ($ok) {
+            $this->journaliser('compte_bancaire.supprimer', 'sav_utilisateurs_comptes_bancaires', $ucbId, $userId, ['utilisateur_id' => $utiId]);
+        }
+        return $ok;
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -319,6 +330,33 @@ class UserComplementModel
             } else {
                 $stmt->bindValue(":{$key}", $val, PDO::PARAM_STR);
             }
+        }
+    }
+
+    /**
+     * CORRECTIF 2.3 (audit, 2026-06-27) : les mutations sur les coordonnées
+     * bancaires d'un utilisateur (IBAN/RIB/BIC) n'étaient pas journalisées.
+     * Ne jamais inclure la donnée bancaire complète dans $metadata.
+     */
+    private function journaliser(string $action, string $table, int $id, ?int $userId, array $metadata): void
+    {
+        try {
+            $this->db->execute(
+                'INSERT INTO sav_journaux_audit
+                    (jau_utilisateur_id, jau_action, jau_table_cible, jau_id_cible, jau_adresse_ip, jau_metadata_json, jau_cree_le)
+                 VALUES
+                    (:user_id, :action, :table_cible, :id_cible, :ip, :metadata, NOW())',
+                [
+                    'user_id' => $userId ?: null,
+                    'action' => $action,
+                    'table_cible' => $table,
+                    'id_cible' => $id ?: null,
+                    'ip' => function_exists('client_ip') ? @inet_pton((string) client_ip()) : null,
+                    'metadata' => json_encode($metadata, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                ]
+            );
+        } catch (\Throwable) {
+            // L'audit ne doit jamais bloquer une opération métier.
         }
     }
 }

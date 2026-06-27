@@ -63,7 +63,7 @@ class ModeleMarqueSociete extends BaseModel
         );
 
         if ($existe) {
-            return $this->db->execute(
+            $ok = $this->db->execute(
                 "UPDATE sav_representations_marques_societes
                  SET rma_termine_le = NULL,
                      rma_statut_id = 1,
@@ -73,20 +73,28 @@ class ModeleMarqueSociete extends BaseModel
                  WHERE rma_id = :id",
                 ['id' => (int) $existe['rma_id'], 'user_id' => $idUtilisateur ?: null]
             );
+            if ($ok) {
+                $this->journaliser('marque_societe.attacher', (int) $existe['rma_id'], $idUtilisateur, ['societe' => $idSociete, 'marque' => $idMarque]);
+            }
+            return $ok;
         }
 
-        return $this->db->execute(
+        $ok = $this->db->execute(
             "INSERT INTO sav_representations_marques_societes
              (rma_concession_societe_id, rma_marque_societe_id, rma_debute_le, rma_statut_id,
               rma_cree_le, rma_cree_par_utilisateur_id)
              VALUES (:societe, :marque, CURDATE(), 1, NOW(), :user_id)",
             ['societe' => $idSociete, 'marque' => $idMarque, 'user_id' => $idUtilisateur ?: null]
         );
+        if ($ok) {
+            $this->journaliser('marque_societe.attacher', (int) $this->db->lastInsertId(), $idUtilisateur, ['societe' => $idSociete, 'marque' => $idMarque]);
+        }
+        return $ok;
     }
 
     public function detacher(int $idSociete, int $idMarque, int $idUtilisateur): bool
     {
-        return $this->db->execute(
+        $ok = $this->db->execute(
             "UPDATE sav_representations_marques_societes
              SET rma_termine_le = COALESCE(rma_termine_le, CURDATE()),
                  rma_statut_id = 4,
@@ -99,6 +107,10 @@ class ModeleMarqueSociete extends BaseModel
                AND rma_supprime_le IS NULL",
             ['societe' => $idSociete, 'marque' => $idMarque, 'user_id' => $idUtilisateur ?: null]
         );
+        if ($ok) {
+            $this->journaliser('marque_societe.detacher', 0, $idUtilisateur, ['societe' => $idSociete, 'marque' => $idMarque]);
+        }
+        return $ok;
     }
 
     private function selectMarquesSql(string $suffixe): string
@@ -125,5 +137,28 @@ class ModeleMarqueSociete extends BaseModel
                      AND LOWER(t.tso_code) = 'marque'
                )
              {$suffixe}";
+    }
+
+    /** CORRECTIF 2.3 (audit) : aucune mutation n'était journalisée. */
+    private function journaliser(string $action, int $id, ?int $userId, array $metadata): void
+    {
+        try {
+            $this->db->execute(
+                'INSERT INTO sav_journaux_audit
+                    (jau_utilisateur_id, jau_action, jau_table_cible, jau_id_cible, jau_adresse_ip, jau_metadata_json, jau_cree_le)
+                 VALUES
+                    (:user_id, :action, :table_cible, :id_cible, :ip, :metadata, NOW())',
+                [
+                    'user_id' => $userId ?: null,
+                    'action' => $action,
+                    'table_cible' => 'sav_representations_marques_societes',
+                    'id_cible' => $id ?: null,
+                    'ip' => function_exists('client_ip') ? @inet_pton((string) client_ip()) : null,
+                    'metadata' => json_encode($metadata, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                ]
+            );
+        } catch (\Throwable) {
+            // L'audit ne doit jamais bloquer une opération métier.
+        }
     }
 }

@@ -171,6 +171,7 @@ class FileModel extends BaseModel
                 $this->lier($id, $targetType, $targetId, (string)($input['lfi_type_liaison'] ?? 'piece_jointe'), $userId, false, $userId, $companyId);
             }
             $this->pdo->commit();
+            $this->journaliser('fichier.upload', $id, $userId, ['nom' => $original, 'taille' => strlen($content)]);
             return $id;
         } catch (\Throwable $e) {
             if ($this->pdo->inTransaction()) {
@@ -228,7 +229,11 @@ class FileModel extends BaseModel
               WHERE ' . implode(' AND ', $where),
             $params
         );
-        return $this->db->rowCount() > 0;
+        $ok = $this->db->rowCount() > 0;
+        if ($ok) {
+            $this->journaliser('fichier.supprimer', $id, $userId, []);
+        }
+        return $ok;
     }
 
     public function statuts(): array
@@ -240,6 +245,29 @@ class FileModel extends BaseModel
     {
         $int = (int)$value;
         return $int > 0 ? $int : null;
+    }
+
+    /** CORRECTIF 2.3 (audit) : aucune mutation n'était journalisée. */
+    private function journaliser(string $action, int $id, ?int $userId, array $metadata): void
+    {
+        try {
+            $this->db->execute(
+                'INSERT INTO sav_journaux_audit
+                    (jau_utilisateur_id, jau_action, jau_table_cible, jau_id_cible, jau_adresse_ip, jau_metadata_json, jau_cree_le)
+                 VALUES
+                    (:user_id, :action, :table_cible, :id_cible, :ip, :metadata, NOW())',
+                [
+                    'user_id' => $userId ?: null,
+                    'action' => $action,
+                    'table_cible' => 'sav_fichiers',
+                    'id_cible' => $id ?: null,
+                    'ip' => function_exists('client_ip') ? @inet_pton((string) client_ip()) : null,
+                    'metadata' => json_encode($metadata, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                ]
+            );
+        } catch (\Throwable) {
+            // L'audit ne doit jamais bloquer une opération métier.
+        }
     }
 
     private function addAccessScope(array &$where, array &$params, string $alias, int $userId, int $companyId, bool $bypass): void

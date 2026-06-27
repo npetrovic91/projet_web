@@ -99,7 +99,9 @@ class StandardModel extends BaseModel
             ]
         );
 
-        return (int) $this->db->lastInsertId();
+        $newId = (int) $this->db->lastInsertId();
+        $this->journaliser('standard.creer', 'sav_standards', $newId, $userId, ['code' => $code]);
+        return $newId;
     }
 
     public function updateStandard(int $id, array $data, ?int $userId): bool
@@ -110,7 +112,7 @@ class StandardModel extends BaseModel
             throw new \InvalidArgumentException('Le code et le nom du standard sont obligatoires.');
         }
 
-        return $this->db->execute(
+        $ok = $this->db->execute(
             "UPDATE sav_standards
              SET std_code = :code,
                  std_nom = :nom,
@@ -129,16 +131,24 @@ class StandardModel extends BaseModel
                 'user_id' => $userId,
             ]
         );
+        if ($ok) {
+            $this->journaliser('standard.modifier', 'sav_standards', $id, $userId, ['code' => $code]);
+        }
+        return $ok;
     }
 
     public function softDeleteStandard(int $id, ?int $userId): bool
     {
-        return $this->db->execute(
+        $ok = $this->db->execute(
             "UPDATE sav_standards
              SET std_supprime_le = NOW(), std_supprime_par_utilisateur_id = :user_id
              WHERE std_id = :id AND std_supprime_le IS NULL",
             ['id' => $id, 'user_id' => $userId]
         );
+        if ($ok) {
+            $this->journaliser('standard.supprimer', 'sav_standards', $id, $userId, []);
+        }
+        return $ok;
     }
 
     public function versions(?int $standardId = null): array
@@ -204,7 +214,9 @@ class StandardModel extends BaseModel
                 'user_id' => $userId,
             ]
         );
-        return (int) $this->db->lastInsertId();
+        $newId = (int) $this->db->lastInsertId();
+        $this->journaliser('version_standard.creer', 'sav_versions_standards', $newId, $userId, ['standard_id' => $standardId, 'version' => $version]);
+        return $newId;
     }
 
     /**
@@ -237,12 +249,16 @@ class StandardModel extends BaseModel
      */
     public function soumettrePourValidation(int $id, int $userId): bool
     {
-        return $this->db->execute(
+        $ok = $this->db->execute(
             "UPDATE sav_versions_standards
              SET vst_etat_validation = 'pending_validation', vst_soumis_le = NOW(), vst_modifie_par_utilisateur_id = :user_id
              WHERE vst_id = :id AND vst_etat_validation = 'draft' AND vst_supprime_le IS NULL",
             ['id' => $id, 'user_id' => $userId]
         );
+        if ($ok) {
+            $this->journaliser('version_standard.soumettre', 'sav_versions_standards', $id, $userId, []);
+        }
+        return $ok;
     }
 
     /**
@@ -253,29 +269,37 @@ class StandardModel extends BaseModel
      */
     public function validerVersion(int $id, int $userId): bool
     {
-        return $this->db->execute(
+        $ok = $this->db->execute(
             "UPDATE sav_versions_standards
              SET vst_etat_validation = 'approved', vst_valide_par_utilisateur_id = :user_id, vst_valide_le = NOW(),
                  vst_modifie_par_utilisateur_id = :user_id
              WHERE vst_id = :id AND vst_etat_validation = 'pending_validation' AND vst_supprime_le IS NULL",
             ['id' => $id, 'user_id' => $userId]
         );
+        if ($ok) {
+            $this->journaliser('version_standard.valider', 'sav_versions_standards', $id, $userId, []);
+        }
+        return $ok;
     }
 
     public function rejeterVersion(int $id, int $userId, string $motif): bool
     {
-        return $this->db->execute(
+        $ok = $this->db->execute(
             "UPDATE sav_versions_standards
              SET vst_etat_validation = 'rejected', vst_valide_par_utilisateur_id = :user_id, vst_rejete_le = NOW(),
                  vst_motif_rejet = :motif, vst_modifie_par_utilisateur_id = :user_id
              WHERE vst_id = :id AND vst_etat_validation = 'pending_validation' AND vst_supprime_le IS NULL",
             ['id' => $id, 'user_id' => $userId, 'motif' => $motif]
         );
+        if ($ok) {
+            $this->journaliser('version_standard.rejeter', 'sav_versions_standards', $id, $userId, ['motif' => $motif]);
+        }
+        return $ok;
     }
 
     public function updateVersion(int $id, array $data, ?int $userId): bool
     {
-        return $this->db->execute(
+        $ok = $this->db->execute(
             "UPDATE sav_versions_standards
              SET vst_version = :version,
                  vst_valide_du = :valide_du,
@@ -292,15 +316,23 @@ class StandardModel extends BaseModel
                 'user_id' => $userId,
             ]
         );
+        if ($ok) {
+            $this->journaliser('version_standard.modifier', 'sav_versions_standards', $id, $userId, []);
+        }
+        return $ok;
     }
 
     public function softDeleteVersion(int $id, ?int $userId): bool
     {
-        return $this->db->execute(
+        $ok = $this->db->execute(
             "UPDATE sav_versions_standards SET vst_supprime_le = NOW(), vst_supprime_par_utilisateur_id = :user_id
              WHERE vst_id = :id AND vst_supprime_le IS NULL",
             ['id' => $id, 'user_id' => $userId]
         );
+        if ($ok) {
+            $this->journaliser('version_standard.supprimer', 'sav_versions_standards', $id, $userId, []);
+        }
+        return $ok;
     }
 
     public function exigences(?int $versionId = null): array
@@ -354,16 +386,22 @@ class StandardModel extends BaseModel
                 'user_id' => $userId,
             ]
         );
-        return (int) $this->db->lastInsertId();
+        $newId = (int) $this->db->lastInsertId();
+        $this->journaliser('exigence_standard.creer', 'sav_exigences_versions_standards', $newId, $userId, ['version_id' => $versionId]);
+        return $newId;
     }
 
     public function softDeleteExigence(int $id, ?int $userId): bool
     {
-        return $this->db->execute(
+        $ok = $this->db->execute(
             "UPDATE sav_exigences_versions_standards SET evs_supprime_le = NOW(), evs_supprime_par_utilisateur_id = :user_id
              WHERE evs_id = :id AND evs_supprime_le IS NULL",
             ['id' => $id, 'user_id' => $userId]
         );
+        if ($ok) {
+            $this->journaliser('exigence_standard.supprimer', 'sav_exigences_versions_standards', $id, $userId, []);
+        }
+        return $ok;
     }
 
     public function referentiels(): array
@@ -439,5 +477,33 @@ class StandardModel extends BaseModel
     {
         $value = trim((string) ($value ?? ''));
         return $value === '' ? null : $value;
+    }
+
+    /**
+     * CORRECTIF 2.3 (convergence gestion d'erreurs / audit, 2026-06-27) :
+     * aucune mutation de ce modèle n'était journalisée, malgré le workflow
+     * de validation à plusieurs niveaux (ACC-008) qui en aurait
+     * particulièrement besoin (qui a validé/rejeté quelle version, quand).
+     */
+    private function journaliser(string $action, string $table, int $id, ?int $userId, array $metadata): void
+    {
+        try {
+            $this->db->execute(
+                'INSERT INTO sav_journaux_audit
+                    (jau_utilisateur_id, jau_action, jau_table_cible, jau_id_cible, jau_adresse_ip, jau_metadata_json, jau_cree_le)
+                 VALUES
+                    (:user_id, :action, :table_cible, :id_cible, :ip, :metadata, NOW())',
+                [
+                    'user_id' => $userId ?: null,
+                    'action' => $action,
+                    'table_cible' => $table,
+                    'id_cible' => $id ?: null,
+                    'ip' => function_exists('client_ip') ? @inet_pton((string) client_ip()) : null,
+                    'metadata' => json_encode($metadata, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                ]
+            );
+        } catch (\Throwable) {
+            // L'audit ne doit jamais bloquer une opération métier.
+        }
     }
 }

@@ -148,6 +148,7 @@ class ModeleTypeSociete extends BaseModel
                    AND tso_supprime_le IS NULL",
                 $params
             );
+            $this->journaliser('type_societe.modifier', $id, $idUtilisateur, ['code' => $code]);
             return $id;
         }
 
@@ -157,7 +158,9 @@ class ModeleTypeSociete extends BaseModel
              VALUES (:code, :nom, :description, :statut_id, NOW(), :user_id)",
             $params
         );
-        return (int) $this->db->lastInsertId();
+        $newId = (int) $this->db->lastInsertId();
+        $this->journaliser('type_societe.creer', $newId, $idUtilisateur, ['code' => $code]);
+        return $newId;
     }
 
     public function supprimerLogiquement(int $id, int $idUtilisateur = 0): void
@@ -186,5 +189,29 @@ class ModeleTypeSociete extends BaseModel
                AND tso_supprime_le IS NULL",
             ['id' => $id, 'user_id' => $idUtilisateur ?: null]
         );
+        $this->journaliser('type_societe.supprimer', $id, $idUtilisateur, []);
+    }
+
+    /** CORRECTIF 2.3 (audit) : aucune mutation n'était journalisée. */
+    private function journaliser(string $action, int $id, ?int $userId, array $metadata): void
+    {
+        try {
+            $this->db->execute(
+                'INSERT INTO sav_journaux_audit
+                    (jau_utilisateur_id, jau_action, jau_table_cible, jau_id_cible, jau_adresse_ip, jau_metadata_json, jau_cree_le)
+                 VALUES
+                    (:user_id, :action, :table_cible, :id_cible, :ip, :metadata, NOW())',
+                [
+                    'user_id' => $userId ?: null,
+                    'action' => $action,
+                    'table_cible' => 'sav_types_societes',
+                    'id_cible' => $id ?: null,
+                    'ip' => function_exists('client_ip') ? @inet_pton((string) client_ip()) : null,
+                    'metadata' => json_encode($metadata, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                ]
+            );
+        } catch (\Throwable) {
+            // L'audit ne doit jamais bloquer une opération métier.
+        }
     }
 }
