@@ -21,6 +21,16 @@ parameters:
 			path: Core/Database/Database.php
 
 		-
+			message: "#^Right side of && is always false\\.$#"
+			count: 1
+			path: Core/Error/GlobalErrorHandler.php
+
+		-
+			message: "#^Ternary operator condition is always false\\.$#"
+			count: 2
+			path: Core/Error/GlobalErrorHandler.php
+
+		-
 			message: "#^Empty array passed to foreach\\.$#"
 			count: 1
 			path: Core/Helpers/AuthHelper.php

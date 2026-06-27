@@ -29,6 +29,11 @@ if (is_file($autoload)) {
     });
 }
 
+// Filet de sécurité global (CORRECTIF 2.3) : enregistré le plus tôt
+// possible pour capter aussi les erreurs survenant pendant le chargement
+// de la configuration elle-même.
+\Nenad\Autosav\Core\Error\GlobalErrorHandler::register();
+
 require_once AUTOSAV_ROOT . '/config/environment.php';
 require_once AUTOSAV_ROOT . '/config/app.php';
 require_once AUTOSAV_ROOT . '/config/constants.php';
