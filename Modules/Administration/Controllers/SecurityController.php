@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace Nenad\Autosav\Modules\Administration\Controllers;
 
 use Nenad\Autosav\Core\Controller\BaseController;
-use Nenad\Autosav\Modules\Administration\Models\SecurityMonitoringModel;
+use Nenad\Autosav\Modules\Administration\Services\SecurityMonitoringService;
 
 /**
  * Administration securite alignee sur la base SQL actuelle.
@@ -17,12 +17,12 @@ use Nenad\Autosav\Modules\Administration\Models\SecurityMonitoringModel;
  */
 class SecurityController extends BaseController
 {
-    private SecurityMonitoringModel $monitoringModel;
+    private SecurityMonitoringService $service;
 
     public function __construct()
     {
         parent::__construct();
-        $this->monitoringModel = new SecurityMonitoringModel();
+        $this->service = new SecurityMonitoringService();
     }
 
     public function index(): void
@@ -33,24 +33,18 @@ class SecurityController extends BaseController
         $filterEmail = $this->getRequest()->get('email', null);
         $page = max(1, (int) $this->getRequest()->get('page', 1));
         $perPage = 30;
-        $offset = ($page - 1) * $perPage;
 
-        $this->render('Administration/Views/security', [
+        $data = $this->service->tableauDeBord($filterIp, $filterEmail, $page, $perPage);
+
+        $this->render('Administration/Views/security', array_merge($data, [
             'pageTitle' => 'Supervision sécurité — Autosav',
-            'stats' => $this->monitoringModel->getSecurityStats(24),
-            'topFailedIps' => $this->monitoringModel->getTopFailedIps(10),
-            'attempts' => $this->monitoringModel->getAttempts($perPage, $offset, $filterIp, $filterEmail),
-            'totalAttempts' => $this->monitoringModel->countAttempts($filterIp, $filterEmail),
-            'activeIpBlocks' => $this->monitoringModel->getActiveIpBlocks(50),
-            'activeEmailBlocks' => $this->monitoringModel->getActiveEmailBlocks(50),
-            'unblockHistory' => $this->monitoringModel->getUnblockHistory(20),
             'currentPage' => $page,
             'perPage' => $perPage,
             'filterIp' => $filterIp,
             'filterEmail' => $filterEmail,
             'csrfToken' => $this->csrfToken(),
             'flash' => $this->flash()->all(),
-        ]);
+        ]));
     }
 
     public function attempts(): void
@@ -82,31 +76,9 @@ class SecurityController extends BaseController
         }
 
         $reason = trim((string) $this->getRequest()->post('reason', ''));
-        if ($reason === '') {
-            $this->flash()->error('La raison du déblocage est obligatoire.');
-            $this->redirect('/admin/security');
-        }
+        $result = $this->service->debloquer($type, $id, $this->userId() ?? 0, client_ip(), $reason);
 
-        $adminId = $this->userId() ?? 0;
-        $adminIp = client_ip();
-
-        try {
-            if ($type === 'ip') {
-                $this->monitoringModel->unblockIp($id, $adminId, $adminIp, $reason);
-                $this->flash()->success("Blocage IP #{$id} levé avec succès.");
-            } else {
-                $this->monitoringModel->unblockUser($id, $adminId, $adminIp, $reason);
-                $this->flash()->success("Compte utilisateur #{$id} déverrouillé avec succès.");
-            }
-        } catch (\Throwable $e) {
-            logger('security')->error('security_unblock_failed', [
-                'type' => $type,
-                'id' => $id,
-                'admin_id' => $adminId,
-                'error' => $e->getMessage(),
-            ]);
-            $this->flash()->error('Une erreur est survenue lors du déblocage.');
-        }
+        $result['success'] ? $this->flash()->success($result['message']) : $this->flash()->error($result['message']);
 
         $this->redirect('/admin/security');
     }
