@@ -4,14 +4,6 @@ declare(strict_types=1);
 namespace Nenad\Autosav\Modules\Notifications\Controllers;
 
 use Nenad\Autosav\Core\Controller\BaseController;
-use Nenad\Autosav\Modules\Notifications\Models\EventTriggerModel;
-use Nenad\Autosav\Modules\Notifications\Models\NotificationAuditModel;
-use Nenad\Autosav\Modules\Notifications\Models\NotificationChannelModel;
-use Nenad\Autosav\Modules\Notifications\Models\NotificationContactModel;
-use Nenad\Autosav\Modules\Notifications\Models\NotificationModel;
-use Nenad\Autosav\Modules\Notifications\Models\NotificationPreferenceModel;
-use Nenad\Autosav\Modules\Notifications\Models\NotificationRuleModel;
-use Nenad\Autosav\Modules\Notifications\Models\NotificationTemplateModel;
 use Nenad\Autosav\Modules\Notifications\Services\NotificationRuleService;
 
 class NotificationRuleController extends BaseController
@@ -21,16 +13,7 @@ class NotificationRuleController extends BaseController
     public function __construct()
     {
         parent::__construct();
-        $this->service = new NotificationRuleService(
-            new EventTriggerModel(),
-            new NotificationContactModel(),
-            new NotificationRuleModel(),
-            new NotificationModel(),
-            new NotificationAuditModel(),
-            new NotificationChannelModel(),
-            new NotificationTemplateModel(),
-            new NotificationPreferenceModel()
-        );
+        $this->service = new NotificationRuleService();
     }
 
     public function index(): void

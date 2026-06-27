@@ -14,20 +14,29 @@ use Nenad\Autosav\Modules\Notifications\Models\NotificationPreferenceModel;
 use Nenad\Autosav\Modules\Notifications\Models\NotificationRuleModel;
 use Nenad\Autosav\Modules\Notifications\Models\NotificationTemplateModel;
 
+/**
+ * CORRECTIF (section 3 du roadmap, "EventTriggers dépend silencieusement
+ * de Notifications sans encapsulation propre") : les 5 premiers paramètres
+ * étaient obligatoires, forçant tout appelant externe (EventTriggerController,
+ * dans un AUTRE module) à connaître et reconstruire l'intégralité du
+ * graphe de dépendances de ce Service — un changement de signature ici
+ * cassait silencieusement EventTriggers sans qu'aucun lien explicite ne
+ * le signale. Tous les paramètres sont maintenant optionnels avec une
+ * valeur par défaut ("new in initializers", PHP 8.1+) : `new
+ * NotificationRuleService()` suffit pour tout appelant qui n'a pas besoin
+ * d'injecter un mock/double (tests).
+ */
 class NotificationRuleService implements ServiceInterface{
     public function __construct(
-        private EventTriggerModel $events,
-        private NotificationContactModel $contacts,
-        private NotificationRuleModel $rules,
-        private NotificationModel $notifications,
-        private NotificationAuditModel $audit,
-        private ?NotificationChannelModel $channels = null,
-        private ?NotificationTemplateModel $templates = null,
-        private ?NotificationPreferenceModel $preferences = null
+        private EventTriggerModel $events = new EventTriggerModel(),
+        private NotificationContactModel $contacts = new NotificationContactModel(),
+        private NotificationRuleModel $rules = new NotificationRuleModel(),
+        private NotificationModel $notifications = new NotificationModel(),
+        private NotificationAuditModel $audit = new NotificationAuditModel(),
+        private NotificationChannelModel $channels = new NotificationChannelModel(),
+        private NotificationTemplateModel $templates = new NotificationTemplateModel(),
+        private NotificationPreferenceModel $preferences = new NotificationPreferenceModel()
     ) {
-        $this->channels ??= new NotificationChannelModel();
-        $this->templates ??= new NotificationTemplateModel();
-        $this->preferences ??= new NotificationPreferenceModel();
     }
 
     public function dashboard(int $companyId): array

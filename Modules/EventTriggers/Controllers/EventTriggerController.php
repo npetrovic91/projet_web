@@ -4,16 +4,18 @@ declare(strict_types=1);
 namespace Nenad\Autosav\Modules\EventTriggers\Controllers;
 
 use Nenad\Autosav\Core\Controller\BaseController;
-use Nenad\Autosav\Modules\Notifications\Models\EventTriggerModel;
-use Nenad\Autosav\Modules\Notifications\Models\NotificationAuditModel;
-use Nenad\Autosav\Modules\Notifications\Models\NotificationChannelModel;
-use Nenad\Autosav\Modules\Notifications\Models\NotificationContactModel;
-use Nenad\Autosav\Modules\Notifications\Models\NotificationModel;
-use Nenad\Autosav\Modules\Notifications\Models\NotificationPreferenceModel;
-use Nenad\Autosav\Modules\Notifications\Models\NotificationRuleModel;
-use Nenad\Autosav\Modules\Notifications\Models\NotificationTemplateModel;
 use Nenad\Autosav\Modules\Notifications\Services\NotificationRuleService;
 
+/**
+ * CORRECTIF (section 3 du roadmap, encapsulation EventTriggers ->
+ * Notifications) : ce contrôleur reconstruisait auparavant lui-même
+ * l'intégralité du graphe de dépendances de NotificationRuleService (8
+ * modèles d'un AUTRE module), ce qui le rendait silencieusement fragile à
+ * tout changement de signature côté Notifications. Le Service est
+ * maintenant auto-suffisant (tous ses paramètres ont une valeur par
+ * défaut) — ce contrôleur n'a plus besoin de connaître ses dépendances
+ * internes.
+ */
 class EventTriggerController extends BaseController
 {
     private NotificationRuleService $service;
@@ -21,16 +23,7 @@ class EventTriggerController extends BaseController
     public function __construct()
     {
         parent::__construct();
-        $this->service = new NotificationRuleService(
-            new EventTriggerModel(),
-            new NotificationContactModel(),
-            new NotificationRuleModel(),
-            new NotificationModel(),
-            new NotificationAuditModel(),
-            new NotificationChannelModel(),
-            new NotificationTemplateModel(),
-            new NotificationPreferenceModel()
-        );
+        $this->service = new NotificationRuleService();
     }
 
     public function index(): void
