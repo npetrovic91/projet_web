@@ -2,8 +2,8 @@
 declare(strict_types=1);
 
 $root = dirname(__DIR__, 2);
-$hotfix = file_get_contents($root . '/database/migrations/2026_06_03_lot36_reset_demo_passwords.sql');
-$readme = file_get_contents($root . '/database/migrations/README_IMPORT_LOT36_RESET_DEMO_PASSWORDS_HOSTINGER.txt');
+$hotfix = file_get_contents($root . '/database/seeds/2026_06_03_lot36_reset_demo_passwords.sql');
+$readme = file_get_contents($root . '/database/seeds/README_IMPORT_LOT36_RESET_DEMO_PASSWORDS_HOSTINGER.txt');
 $accounts = file_get_contents($root . '/docs/COMPTES_DEMO_LOT35.md');
 
 $hash = '$argon2id$v=19$m=65536,t=4,p=1$eG91d1ZxUGZ1LjV1MDFPVw$NfTUFJpcpH6gZegE8mJZ0BNRgK2O+KZUXTuJ/pI1784';

@@ -1,13 +1,13 @@
 # Comptes de demonstration lot35
 
-Ces comptes sont crees par `database/migrations/2026_06_03_lot35_demo_reseau_automobile.sql`.
+Ces comptes sont crees par `database/seeds/2026_06_03_lot35_demo_reseau_automobile.sql`.
 
 Mot de passe temporaire commun : `DemoAutosav!2026`.
 
 Le script stocke uniquement le hash Argon2id de ce mot de passe. Les comptes sont marques comme devant changer leur mot de passe apres connexion. Ce mot de passe doit etre change ou supprime avant une mise en production reelle.
 
 Si la connexion affiche `Identifiants invalides`, importer le correctif SQL :
-`database/migrations/2026_06_03_lot36_reset_demo_passwords.sql`.
+`database/seeds/2026_06_03_lot36_reset_demo_passwords.sql`.
 
 | Identifiant | Email | Role | Fonction | Societe / concession active | Marque active |
 | --- | --- | --- | --- | --- | --- |

@@ -24,7 +24,7 @@ $functionModel = file_get_contents($root . '/Modules/Functions/Models/FunctionMo
 $contextController = file_get_contents($root . '/Modules/Ajax/Controllers/ContextController.php') ?: '';
 $csrfMiddleware = file_get_contents($root . '/Core/Middleware/CsrfMiddleware.php') ?: '';
 $migrationLot37 = file_get_contents($root . '/database/migrations/2026_06_03_lot37_admin_societe_permissions_referentiels.sql') ?: '';
-$migrationLot38 = file_get_contents($root . '/database/migrations/2026_06_03_lot38_contextes_roles_admin_reseau.sql') ?: '';
+$migrationLot38 = file_get_contents($root . '/database/seeds/2026_06_03_lot38_contextes_roles_admin_reseau.sql') ?: '';
 
 assert(json_decode($themeConfig, true) !== null, 'Theme config JSON invalide.');
 

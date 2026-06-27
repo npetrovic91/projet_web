@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 $root = dirname(__DIR__, 2);
-$migration = file_get_contents($root . '/database/migrations/2026_06_03_lot35_demo_reseau_automobile.sql');
+$migration = file_get_contents($root . '/database/seeds/2026_06_03_lot35_demo_reseau_automobile.sql');
 $migrationLot37 = file_get_contents($root . '/database/migrations/2026_06_03_lot37_admin_societe_permissions_referentiels.sql');
 $authService = file_get_contents($root . '/Modules/Auth/Services/AuthService.php');
 $roleResolver = file_get_contents($root . '/Core/Security/Class/RoleResolver.php');

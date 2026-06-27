@@ -17,7 +17,7 @@ Procédure :
 1. Se connecter à hPanel → Bases de données → phpMyAdmin.
 2. Sélectionner la base u166513890_base.
 3. Onglet « Importer » → choisir le fichier
-   database/migrations/2026_06_03_lot36_reset_demo_passwords.sql
+   database/seeds/2026_06_03_lot36_reset_demo_passwords.sql
    → Exécuter.
 4. Réessayer la connexion avec un compte démo et le mot de passe
    DemoAutosav!2026 (le changement de mot de passe sera demandé à la

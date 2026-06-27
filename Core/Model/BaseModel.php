@@ -69,11 +69,32 @@ abstract class BaseModel
 
     /**
      * Récupère tous les enregistrements.
+     *
+     * CORRECTIF HIGH-2 (audit sécurité 2026-06-26) : $orderBy était
+     * concaténé directement dans la requête sans validation
+     * ("ORDER BY {$orderBy}"). Si jamais passé depuis une valeur
+     * utilisateur ($_GET['sort']), c'était une injection SQL via ORDER BY.
+     * Aucun appelant actuel ne passait de valeur utilisateur (vérifié :
+     * findAll() n'est appelé nulle part dans le code à ce jour), mais la
+     * méthode reste publique et doit être sûre par construction.
+     *
+     * $orderBy est maintenant validé par quoteIdentifier() (format strict
+     * /^[A-Za-z0-9_]+$/) et, si une whitelist est fournie, vérifié contre
+     * elle. $orderBy doit toujours être une valeur en dur dans le code
+     * appelant, jamais directement issue de $_GET/$_POST.
+     *
+     * @param string[] $allowedColumns Whitelist optionnelle des colonnes de tri autorisées.
      */
-    public function findAll(string $orderBy = '', int $limit = 0): array
+    public function findAll(string $orderBy = '', int $limit = 0, string $direction = 'ASC', array $allowedColumns = []): array
     {
         $sql = "SELECT * FROM `{$this->tableName}`";
-        if ($orderBy) $sql .= " ORDER BY {$orderBy}";
+        if ($orderBy !== '') {
+            if ($allowedColumns !== [] && !in_array($orderBy, $allowedColumns, true)) {
+                throw new \InvalidArgumentException('Colonne de tri non autorisée : ' . $orderBy);
+            }
+            $direction = strtoupper($direction) === 'DESC' ? 'DESC' : 'ASC';
+            $sql .= ' ORDER BY ' . $this->quoteIdentifier($orderBy) . ' ' . $direction;
+        }
         if ($limit > 0) $sql .= " LIMIT {$limit}";
         return $this->query($sql)->fetchAll();
     }

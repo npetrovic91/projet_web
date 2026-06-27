@@ -169,8 +169,3 @@ parameters:
 			message: "#^Right side of && is always false\\.$#"
 			count: 1
 			path: bin/production_preflight.php
-
-		-
-			message: "#^Offset 'status' on array\\{status\\: 'NOTOK', message\\: string, checked_at\\: non\\-falsy\\-string\\}\\|array\\{status\\: 'SUCCESS', checked_at\\: non\\-falsy\\-string, executed\\: 0, message\\: 'Maintenance…', policies_detected\\: int\\<0, max\\>, policies\\: array\\} on left side of \\?\\? always exists and is not nullable\\.$#"
-			count: 1
-			path: bin/run_maintenance.php

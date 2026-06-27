@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 $root = dirname(__DIR__, 2);
-$migration = file_get_contents($root . '/database/migrations/2026_06_03_lot35_demo_reseau_automobile.sql');
+$migration = file_get_contents($root . '/database/seeds/2026_06_03_lot35_demo_reseau_automobile.sql');
 
 $requiredConstructors = [
     'BMW_GROUP',
