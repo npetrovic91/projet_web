@@ -1,10 +1,19 @@
 # Comptes de demonstration lot35
 
+> **AVERTISSEMENT (audit securite 2026-06-26, LOW-4) :** le mot de passe
+> ci-dessous est PUBLIC (visible par quiconque a acces a ce depot Git).
+> Ces comptes ne doivent **jamais exister dans la base de production
+> reelle** — ni avec ce mot de passe, ni avec un autre. Ils servent
+> uniquement aux environnements de demonstration/recette.
+> `database/seeds/` n'est jamais applique automatiquement par
+> `bin/migrate.php` (qui ne scanne que `database/migrations/`) : ne pas
+> importer ces fichiers sur la base client.
+
 Ces comptes sont crees par `database/seeds/2026_06_03_lot35_demo_reseau_automobile.sql`.
 
 Mot de passe temporaire commun : `DemoAutosav!2026`.
 
-Le script stocke uniquement le hash Argon2id de ce mot de passe. Les comptes sont marques comme devant changer leur mot de passe apres connexion. Ce mot de passe doit etre change ou supprime avant une mise en production reelle.
+Le script stocke uniquement le hash Argon2id de ce mot de passe. Les comptes sont marques comme devant changer leur mot de passe apres connexion. Sur un environnement de demonstration partage ou expose publiquement, supprimer ces comptes (ou changer leur mot de passe) reste necessaire malgre ce marquage.
 
 Si la connexion affiche `Identifiants invalides`, importer le correctif SQL :
 `database/seeds/2026_06_03_lot36_reset_demo_passwords.sql`.

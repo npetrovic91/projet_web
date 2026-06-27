@@ -41,6 +41,28 @@ Légende sévérité : 🔴 Critique (bloquant production) · 🟡 Majeur (à co
 | 2.4 | **Notifications in-app + audit pour chaque action utilisateur** | Pas de système de notification in-app généralisé. | 🔜 À traiter. |
 | 2.5 | **Emails PHPMailer fonctionnels (existants + nouveaux déclencheurs)** | EmailService déclaré mais pas vérifié end-to-end ; pas de nouveaux déclencheurs (changement mot de passe, changement de rôle...). | 🔜 À traiter. |
 
+## 2.6 Audit DevOps senior 2026-06-26 — durcissement production
+
+| Sévérité | Constat | Statut |
+|---|---|---|
+| CRIT-1 | `.env` réel non versionné (déjà correct), template production manquant | ✅ `.env.production.template` ajouté. `.env` lui-même volontairement non touché à la demande de l'utilisateur (sera renseigné juste avant mise en production). |
+| HIGH-1 | Race condition TOCTOU dans `RateLimitMiddleware` (lecture sans verrou) | ✅ Traité : lecture+écriture sous un seul `flock(LOCK_EX)`. |
+| HIGH-2 | `BaseModel::findAll()` — `$orderBy` concaténé sans validation | ✅ Traité : `quoteIdentifier()` + whitelist optionnelle. |
+| HIGH-3 | Détection de placeholder `HEALTHCHECK_TOKEN`/`ENCRYPTION_KEY` ne couvrait pas le nouveau préfixe `REMPLACER_` | ✅ Traité : regex étendues + exigence de format réel (64 hex). |
+| HIGH-4 | Détournement de session (changement de user-agent) détecté mais jamais journalisé | ✅ Traité : log `security` avant destruction + `sha256`/`hash_equals()`. |
+| HIGH-5 | Nonce CSP prétendument non appliqué à `script-src`/`style-src` | ✅ Vérifié comme déjà correctement implémenté (faux positif de l'audit fourni). |
+| MED-1 | `style-src-attr 'unsafe-inline'` actif (compat attributs `style=""` inline) | 🔜 **Non traité** : 78 occurrences `style="..."` recensées dans 41 fichiers de vues. Migration vers classes CSS nécessaire mais à risque de régression visuelle élevé sans possibilité de test visuel exhaustif dans cette session — à traiter par lot, vue par vue, avec vérification manuelle à chaque fois. |
+| MED-2 | `storage/` exposable si `mod_rewrite` désactivé | ✅ Traité : `storage/.htaccess` dédié (`Require all denied`, indépendant de mod_rewrite). |
+| MED-3 | Pas d'audit CVE en CI | ✅ Traité : `composer audit` ajouté à `ci.yml`. |
+| MED-4 | `composer.lock` exclu du dépôt (builds non reproductibles) | ✅ Traité : retiré du `.gitignore`, versionné. |
+| MED-5 | Buckets de rate limiting jamais purgés | ✅ Traité : `RateLimitMiddleware::purgeExpiredBuckets()` + appel depuis `run_maintenance.php`. |
+| MED-6 | Mot de passe potentiellement loggé en clair si saisi par erreur dans le champ identifiant | ✅ Traité : `AuthModel::enregistrerTentativeConnexion()` ne persiste la valeur brute que si elle a la forme d'un email, sinon marqueur masqué. |
+| MED-7 | Sessions PHP stockées en fichiers non chiffrés | 🔜 **Accepté comme risque résiduel documenté** : migrer vers un handler de session chiffré ou un stockage BDD est un changement d'architecture significatif, hors proportion avec la sévérité MED sur un hébergement mutualisé où le vrai contrôle est la permission fichier (déjà couverte par `Makefile storage-init`/`permissions` et le pool PHP-FPM dédié en cas de migration VPS). À revisiter si l'hébergement évolue vers un environnement multi-tenant à risque plus élevé. |
+| LOW-1 | "PHP 7.2" dans un dump SQL vs PHP 8.1+ requis | ✅ Clarifié dans `RUNBOOK_DEPLOIEMENT.md` : en-tête d'export phpMyAdmin, sans rapport avec le runtime réel. |
+| LOW-2 | 2FA non forcée pour les rôles sensibles | ⏸️ Reporté (cf. 2.1, décision explicite de l'utilisateur). |
+| LOW-3 | Pas de `report-uri` CSP | ✅ Traité : `public/csp-report.php` + directive dans `CSP_POLICY`. |
+| LOW-4 | Mot de passe démo documenté en clair dans le dépôt | ✅ Traité : avertissement renforcé dans `docs/COMPTES_DEMO_LOT35.md` (ne doit jamais exister en production, quel que soit le mot de passe). |
+
 ## 3. Moyens / mineurs (🟠⚪) — amélioration continue
 
 - **EventTriggers** dépend silencieusement de `Notifications` sans encapsulation propre (Service intermédiaire manquant) — risque de casse si Notifications est refactorisé.

@@ -220,6 +220,10 @@ defined('CSP_POLICY') || define('CSP_POLICY', implode('; ', [
     "object-src 'none'",
     "worker-src 'self'",
     "manifest-src 'self'",
+    // CORRECTIF LOW-3 (audit DevOps 2026-06-26) : sans report-uri, aucune
+    // tentative XSS bloquée par cette CSP n'était jamais visible côté
+    // équipe — voir public/csp-report.php.
+    "report-uri /csp-report.php",
 ]));
 
 // ============================================================

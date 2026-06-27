@@ -292,6 +292,20 @@ class AuthModel
 
     public function enregistrerTentativeConnexion(?int $utilisateurId, string $email, bool $succes, ?string $raisonEchec = null): void
     {
+        // CORRECTIF MED-6 (audit sécurité 2026-06-26) : la connexion se fait
+        // toujours par email (normaliserEmail() est systématique), donc une
+        // valeur saisie qui ne ressemble pas à un email est très probablement
+        // un mot de passe tapé par erreur dans le champ identifiant — un
+        // schéma d'erreur utilisateur courant. L'enregistrer en clair dans
+        // cette table de journalisation exposerait ce mot de passe à
+        // quiconque a accès aux logs/BDD (administrateurs, hébergeur). On ne
+        // persiste donc la valeur brute que si elle a la forme d'un email ;
+        // sinon on la remplace par un marqueur masqué qui garde une valeur
+        // diagnostique (longueur) sans exposer le secret.
+        $emailBrut = $email !== '' && str_contains($email, '@') && preg_match('/^.+@.+\..+$/', $email) === 1
+            ? $email
+            : ($email !== '' ? '[MASQUE_NON_EMAIL:' . mb_strlen($email) . ']' : null);
+
         $stmt = $this->pdo->prepare(
             "INSERT INTO sav_tentatives_connexion
                 (tcn_utilisateur_id, tcn_email_tente, tcn_email_normalise, tcn_adresse_ip, tcn_user_agent, tcn_succes, tcn_raison_echec, tcn_cree_le)
@@ -299,8 +313,8 @@ class AuthModel
                 (:user_id, :email, :email_norm, :ip, :ua, :succes, :raison, NOW())"
         );
         $stmt->bindValue(':user_id', $utilisateurId, $utilisateurId ? PDO::PARAM_INT : PDO::PARAM_NULL);
-        $stmt->bindValue(':email', $email !== '' ? $email : null);
-        $stmt->bindValue(':email_norm', $email !== '' ? self::normaliserEmail($email) : null);
+        $stmt->bindValue(':email', $emailBrut);
+        $stmt->bindValue(':email_norm', $emailBrut !== null && str_starts_with($emailBrut, '[MASQUE_') ? null : self::normaliserEmail($email));
         $stmt->bindValue(':ip', $this->ipBinaire(), PDO::PARAM_LOB);
         $stmt->bindValue(':ua', substr((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 255));
         $stmt->bindValue(':succes', $succes ? 1 : 0, PDO::PARAM_INT);

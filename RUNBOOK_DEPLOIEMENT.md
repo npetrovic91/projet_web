@@ -19,6 +19,14 @@
 | Composer | 2.x | Disponible en local pour générer l'artéfact |
 | Apache/Nginx | — | Géré par Hostinger sur mutualisé, non éditable |
 
+> **Note (audit DevOps 2026-06-26, LOW-1) :** un export SQL phpMyAdmin
+> contient un en-tête de commentaire `-- PHP Version: 7.2.x` qui reflète
+> uniquement la version de PHP utilisée par l'outil d'export au moment du
+> dump, **pas** la version réellement exécutée par l'application en
+> production — ce n'est pas une contradiction de configuration. Vérifier
+> la version réelle via hPanel → Sites Web → PHP (doit être 8.1 minimum,
+> voir `composer.json`).
+
 ---
 
 ## ÉTAPE 0 — CHECKLIST PRÉ-DÉPLOIEMENT

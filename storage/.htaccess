@@ -1,0 +1,14 @@
+# AUTOSAV — Blocage direct du dossier storage/ (CORRECTIF MED-2, audit DevOps 2026-06-26)
+#
+# Le .htaccess racine bloque déjà storage/ via mod_rewrite, mais cette
+# protection ne s'applique pas si mod_rewrite est désactivé sur
+# l'hébergeur. "Require all denied" ne dépend que de mod_authz_core
+# (quasi toujours actif), donc reste actif même sans mod_rewrite —
+# défense en profondeur pour les sauvegardes BDD, logs, sessions et
+# exports qui ne doivent jamais être servis directement.
+Require all denied
+
+<IfModule !mod_authz_core.c>
+    Order deny,allow
+    Deny from all
+</IfModule>
