@@ -713,12 +713,19 @@ return [
     // ========================================================
     // SUPER-ADMIN / GESTION APPLICATION / AUTOTESTS (Lot 29)
     // ========================================================
-    'GET /super-admin'                     => ['SuperAdmin\\Controllers\\SuperAdminController', 'index',       ['auth', 'maintenance']],
-    'GET /admin/application'               => ['SuperAdmin\\Controllers\\SuperAdminController', 'application', ['auth', 'maintenance']],
-    'GET /super-admin/application'         => ['SuperAdmin\\Controllers\\SuperAdminController', 'application', ['auth', 'maintenance']],
-    'GET /super-admin/export.json'         => ['SuperAdmin\\Controllers\\SuperAdminController', 'exportJson',   ['auth', 'maintenance']],
-    'GET /super-admin/justification'       => ['SuperAdmin\\Controllers\\SuperAdminController', 'justificationForm',   ['auth', 'maintenance']],
-    'POST /super-admin/justification'      => ['SuperAdmin\\Controllers\\SuperAdminController', 'justificationSubmit', ['auth', 'maintenance', 'csrf']],
+    // CORRECTIF (section 3 du roadmap, "routes /super-admin/* protegees
+    // seulement au niveau controleur") : 'role:super_administrateur' ajoute
+    // une seconde ligne de defense au niveau du routeur lui-meme (RoleMiddleware,
+    // jusqu'ici defini mais jamais utilise par aucune route). Le requireRole()
+    // existant dans chaque action de SuperAdminController est conserve tel quel
+    // (defense en profondeur) : si une future action oublie cet appel, le
+    // routeur bloque quand meme l'acces avant meme d'instancier le controleur.
+    'GET /super-admin'                     => ['SuperAdmin\\Controllers\\SuperAdminController', 'index',       ['auth', 'maintenance', 'role:super_administrateur']],
+    'GET /admin/application'               => ['SuperAdmin\\Controllers\\SuperAdminController', 'application', ['auth', 'maintenance', 'role:super_administrateur']],
+    'GET /super-admin/application'         => ['SuperAdmin\\Controllers\\SuperAdminController', 'application', ['auth', 'maintenance', 'role:super_administrateur']],
+    'GET /super-admin/export.json'         => ['SuperAdmin\\Controllers\\SuperAdminController', 'exportJson',   ['auth', 'maintenance', 'role:super_administrateur']],
+    'GET /super-admin/justification'       => ['SuperAdmin\\Controllers\\SuperAdminController', 'justificationForm',   ['auth', 'maintenance', 'role:super_administrateur']],
+    'POST /super-admin/justification'      => ['SuperAdmin\\Controllers\\SuperAdminController', 'justificationSubmit', ['auth', 'maintenance', 'role:super_administrateur', 'csrf']],
 
     'GET /autotests'                       => ['AutoTests\\Controllers\\AutoTestController',    'index',       ['auth', 'maintenance']],
     'GET /admin/autotests'                 => ['AutoTests\\Controllers\\AutoTestController',    'index',       ['auth', 'maintenance']],
