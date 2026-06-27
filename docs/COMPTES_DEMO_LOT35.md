@@ -11,12 +11,20 @@
 
 Ces comptes sont crees par `database/seeds/2026_06_03_lot35_demo_reseau_automobile.sql`.
 
-Mot de passe temporaire commun : `DemoAutosav!2026`.
+Mot de passe d'origine de ce lot : `DemoAutosav!2026` (toujours valable si seul `database/seeds/2026_06_03_lot35_demo_reseau_automobile.sql` a ete importe).
+
+**Mise a jour 2026-06-27 :** `database/seeds/2026_06_27_unifier_mot_de_passe_demo.sql` aligne **TOUS** les comptes demo (`@autosav.demo`, quel que soit le lot : reseau automobile, MotorGroup/ImportAuto/NeoVolt, Groupe/Concession) sur un seul mot de passe commun :
+
+```
+Demo2026!
+```
+
+Ce script a ete ajoute apres constat, sur un export reel, d'une incoherence : un compte (`pdg.neovolt@autosav.demo`) avait un mot de passe different des 10 autres comptes NeoVolt, jamais couvert par le correctif lot36 ci-dessous (qui ne ciblait que les comptes du reseau automobile). Si ce script a ete importe, **utiliser `Demo2026!` pour tous les comptes demo**, y compris ceux de ce tableau.
 
 Le script stocke uniquement le hash Argon2id de ce mot de passe. Les comptes sont marques comme devant changer leur mot de passe apres connexion. Sur un environnement de demonstration partage ou expose publiquement, supprimer ces comptes (ou changer leur mot de passe) reste necessaire malgre ce marquage.
 
 Si la connexion affiche `Identifiants invalides`, importer le correctif SQL :
-`database/seeds/2026_06_03_lot36_reset_demo_passwords.sql`.
+`database/seeds/2026_06_03_lot36_reset_demo_passwords.sql` (mot de passe `DemoAutosav!2026`, reseau automobile uniquement) ou, pour tout unifier, `database/seeds/2026_06_27_unifier_mot_de_passe_demo.sql` (mot de passe `Demo2026!`, tous comptes demo).
 
 | Identifiant | Email | Role | Fonction | Societe / concession active | Marque active |
 | --- | --- | --- | --- | --- | --- |
