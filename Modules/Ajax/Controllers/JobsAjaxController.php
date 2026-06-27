@@ -22,7 +22,9 @@ class JobsAjaxController extends AjaxController
     public function list(): void
     {
         $companyTypeId = $this->request->get('company_type_id') ? (int) $this->request->get('company_type_id') : null;
-        $companyId = $this->request->get('company_id') ? (int) $this->request->get('company_id') : ($this->user['active_company_id'] ?? null);
+        // CORRECTIF (section 3 du roadmap, énumération via company_id en GET) :
+        // uniquement la société active de la session, jamais une valeur fournie par le client.
+        $companyId = $this->user['active_company_id'] ?? null;
         AjaxResponseService::success('Metiers charges.', [
             'jobs' => $this->service->getForContext($companyTypeId, $companyId ? (int) $companyId : null)
         ]);
@@ -37,7 +39,9 @@ class JobsAjaxController extends AjaxController
     {
         $q = trim((string) $this->request->get('q', ''));
         $companyTypeId = $this->request->get('company_type_id') ? (int) $this->request->get('company_type_id') : null;
-        $companyId = $this->request->get('company_id') ? (int) $this->request->get('company_id') : ($this->user['active_company_id'] ?? null);
+        // CORRECTIF (section 3 du roadmap, énumération via company_id en GET) :
+        // uniquement la société active de la session, jamais une valeur fournie par le client.
+        $companyId = $this->user['active_company_id'] ?? null;
         $items = $q === '' ? [] : $this->service->search($q, $companyTypeId, $companyId ? (int) $companyId : null);
         AjaxResponseService::success('Recherche effectuee.', [
             'results' => array_map(static fn(array $row): array => [

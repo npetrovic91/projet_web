@@ -82,9 +82,21 @@ class FunctionsAjaxController extends AjaxController
         ));
     }
 
+    /**
+     * CORRECTIF (section 3 du roadmap, "company_id accepté en GET sur
+     * certains contrôleurs Ajax... à nettoyer pour éviter toute
+     * énumération") : un company_id arbitraire fourni par le client
+     * permettait de filtrer sur N'IMPORTE QUELLE société, y compris une
+     * dont l'utilisateur n'est pas membre — le middleware tenant bloque
+     * l'accès aux données métier sensibles, mais ce catalogue de fonctions
+     * inclut aussi les entrées spécifiques à une société (pas seulement
+     * globales), ce qui pouvait révéler leur existence/nom à un tiers.
+     * Plus aucun override possible depuis la requête : uniquement la
+     * société active de la session de l'utilisateur courant.
+     */
     private function requestedCompanyId(): ?int
     {
-        $companyId = $this->request->get('company_id') ? (int) $this->request->get('company_id') : ($this->user['active_company_id'] ?? null);
+        $companyId = $this->user['active_company_id'] ?? null;
         return $companyId ? (int) $companyId : null;
     }
 

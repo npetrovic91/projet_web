@@ -66,12 +66,14 @@ Légende sévérité : 🔴 Critique (bloquant production) · 🟡 Majeur (à co
 
 ## 3. Moyens / mineurs (🟠⚪) — amélioration continue
 
-- **EventTriggers** dépend silencieusement de `Notifications` sans encapsulation propre (Service intermédiaire manquant) — risque de casse si Notifications est refactorisé.
-- **Administration/SecurityController** contient de la logique métier qui devrait être dans un Service, pas directement dans le Controller/Model.
-- Deux noms différents pour la même opération CSRF (`requireCsrf`/`validateCsrf` vs `verifyCsrf`) — à unifier pour la lisibilité.
-- Routes `/super-admin/*` protégées seulement au niveau contrôleur (`requireRole()`), pas par un middleware de routing dédié — fonctionnellement correct mais plus fragile si un contrôleur oublie l'appel.
-- Échecs d'écriture d'audit avalés silencieusement si la base d'audit est indisponible (`UserModel.php:66-75`) — à transformer en alerte au minimum.
-- `company_id` accepté en paramètre GET sur certains contrôleurs Ajax (mitigé par le middleware tenant, mais à nettoyer pour éviter toute énumération).
+| Sujet | Statut |
+|---|---|
+| EventTriggers dépend silencieusement de Notifications sans encapsulation propre | ✅ Traité : `NotificationRuleService` auto-suffisant (tous paramètres optionnels avec défaut), plus besoin de reconstruire son graphe de dépendances depuis un autre module. |
+| Administration/SecurityController contient de la logique métier qui devrait être dans un Service | ✅ Traité : `Modules/Administration/Services/SecurityMonitoringService.php` extrait (validation, dispatch IP/compte, gestion d'erreur). |
+| Deux noms différents pour la même opération CSRF (`requireCsrf`/`validateCsrf`) | ✅ Traité : `validateCsrf()` devient le nom canonique (déjà le plus utilisé), `requireCsrf()` alias rétro-compatible. `verifyCsrf(?string): bool` conservé (usage distinct, pas un doublon). |
+| Échecs d'écriture d'audit avalés silencieusement (`UserModel`) | ✅ Traité : journalisé aussi en `critical` sur le canal `error` (en plus du canal `audit` existant), visible dans la surveillance prioritaire (`make logs-error`). |
+| `company_id` accepté en paramètre GET sur certains contrôleurs Ajax | ✅ Traité pour les 2 cas à risque réel : `JobsAjaxController` et `FunctionsAjaxController` exposaient des catalogues incluant des entrées propres à une société (pas seulement globales) — un `company_id` arbitraire permettait de sonder l'existence d'entrées d'une société tierce. Aucune vue/JS du projet n'envoyait réellement ce paramètre (vérifié) : retiré sans perte fonctionnelle. `UsersAjaxController::getSubordinates()` conservé : son filtre ne fait que *réduire* une liste déjà autorisée par `assertCanManage()`, pas le même risque. |
+| Routes `/super-admin/*` protégées seulement au niveau contrôleur (`requireRole()`), pas par un middleware de routing dédié | 🔜 **Non traité** : fonctionnellement correct aujourd'hui (chaque contrôleur appelle bien `requireRole()`), mais plus fragile si un futur contrôleur oublie l'appel. Nécessiterait d'introduire un vrai middleware de routing (`config/urls.php` n'a actuellement que `['auth', 'ajax', 'csrf']` comme tags) — changement d'architecture du routeur, pas un simple nettoyage ponctuel. Laissé pour un chantier dédié. |
 
 ## 4. Ce qui est déjà solide (ne pas re-creuser)
 
