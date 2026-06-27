@@ -72,8 +72,13 @@ class GdprService implements ServiceInterface{
         $userId = (int) ($request['grq_user_id'] ?? 0);
         $this->actions->record($requestId, $userId, 'request_accepted', $adminId, $ip, ['response' => $response]);
         if ($userId > 0) {
-            $this->notifier->notifierUtilisateur(
+            // CORRECTIF 2.5 (déclencheur email) : une notification in-app
+            // seule ne suffit pas pour une obligation légale RGPD —
+            // l'email garantit que la personne est réellement informée
+            // même si elle ne se connecte pas à l'application.
+            $this->notifier->notifierUtilisateurAvecEmail(
                 $userId,
+                (string) ($request['use_email'] ?? ''),
                 'gdpr.demande_acceptee',
                 'Votre demande RGPD a été acceptée',
                 trim('Votre demande a été acceptée. ' . $response),
@@ -95,8 +100,9 @@ class GdprService implements ServiceInterface{
         $userId = (int) ($request['grq_user_id'] ?? 0);
         $this->actions->record($requestId, $userId, 'request_rejected', $adminId, $ip, ['reason' => $reason]);
         if ($userId > 0) {
-            $this->notifier->notifierUtilisateur(
+            $this->notifier->notifierUtilisateurAvecEmail(
                 $userId,
+                (string) ($request['use_email'] ?? ''),
                 'gdpr.demande_rejetee',
                 'Votre demande RGPD a été rejetée',
                 trim('Votre demande a été rejetée. Motif : ' . $reason),

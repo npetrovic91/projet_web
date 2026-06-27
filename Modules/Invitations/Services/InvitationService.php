@@ -5,17 +5,20 @@ namespace Nenad\Autosav\Modules\Invitations\Services;
 
 use Nenad\Autosav\Core\Services\Contracts\ServiceInterface;
 
+use Nenad\Autosav\Modules\Emails\Services\EmailService;
 use Nenad\Autosav\Modules\Invitations\Models\InvitationModel;
 use Nenad\Autosav\Modules\Notifications\Services\ActionNotifier;
 
 class InvitationService implements ServiceInterface{
     private InvitationModel $model;
     private ActionNotifier $notifier;
+    private EmailService $emails;
 
-    public function __construct(?ActionNotifier $notifier = null)
+    public function __construct(?ActionNotifier $notifier = null, ?EmailService $emails = null)
     {
         $this->model = new InvitationModel();
         $this->notifier = $notifier ?? new ActionNotifier();
+        $this->emails = $emails ?? new EmailService();
     }
 
     public function statistiques(?int $societeId = null): array { return $this->model->statistiques($societeId); }
@@ -39,6 +42,14 @@ class InvitationService implements ServiceInterface{
         $data['inv_cree_par_utilisateur_id'] = $userId;
         $newId = $this->model->creer($data);
         $this->model->audit($userId, $data['inv_societe_id'], 'invitation.creer', 'sav_invitations_utilisateurs', $newId, ['email' => $data['inv_email']], $ip);
+
+        // CORRECTIF 2.5 (déclencheur email, 2026-06-27) : avant ce correctif,
+        // le jeton d'invitation n'était JAMAIS envoyé par email — seulement
+        // affiché en flash message à l'administrateur, qui devait le
+        // transmettre lui-même par un canal externe. L'invitation est
+        // pourtant inutilisable sans ce lien.
+        $this->envoyerEmailInvitation($data['inv_email'], $token);
+
         return ['id' => $newId, 'token' => $token];
     }
 
@@ -60,6 +71,7 @@ class InvitationService implements ServiceInterface{
             'inv_modifie_par_utilisateur_id' => $userId,
         ]);
         $this->model->audit($userId, (int)$invitation['inv_societe_id'], 'invitation.regenerer', 'sav_invitations_utilisateurs', $id, [], $ip);
+        $this->envoyerEmailInvitation((string) $invitation['inv_email'], $token);
         return $token;
     }
 
@@ -156,6 +168,33 @@ class InvitationService implements ServiceInterface{
     {
         $jours = max(1, min(60, (int)($post['expire_jours'] ?? 7)));
         return date('Y-m-d H:i:s', strtotime('+' . $jours . ' days'));
+    }
+
+    /**
+     * CORRECTIF 2.5 : envoi réel (PHPMailer via EmailService) du lien
+     * d'invitation. Best-effort : un échec d'envoi ne doit jamais
+     * empêcher la création/régénération de l'invitation elle-même
+     * (cohérent avec ActionNotifier::notifierUtilisateurAvecEmail()) — le
+     * jeton reste disponible via le flash message en repli.
+     */
+    private function envoyerEmailInvitation(string $email, string $token): void
+    {
+        $appUrl = defined('APP_URL') ? rtrim((string) APP_URL, '/') : '';
+        $lien = $appUrl . '/invitations/accept/' . rawurlencode($token);
+        try {
+            $this->emails->envoyer([
+                'to' => $email,
+                'subject' => 'Invitation à rejoindre AUTOSAV',
+                'body' => '<p>Vous avez été invité à créer votre compte AUTOSAV.</p>'
+                    . '<p><a href="' . htmlspecialchars($lien, ENT_QUOTES, 'UTF-8') . '">Accepter l\'invitation</a></p>'
+                    . '<p>Ce lien expire dans quelques jours. Si vous n\'êtes pas à l\'origine de cette demande, ignorez cet email.</p>',
+                'type_evenement' => 'invitation.envoyee',
+            ]);
+        } catch (\Throwable $e) {
+            if (function_exists('logger')) {
+                logger('email')->warning('invitation_email_echec', ['email' => $email, 'erreur' => $e->getMessage()]);
+            }
+        }
     }
 
     private function genererToken(): string
