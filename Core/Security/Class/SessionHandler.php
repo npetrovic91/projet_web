@@ -36,14 +36,32 @@ class SessionHandler
         session_start();
 
         // Vérification d'intégrité de session (user-agent binding)
+        //
+        // CORRECTIF HIGH-4 (audit sécurité 2026-06-26) : la détection d'un
+        // changement de user-agent (signe possible de vol de cookie de
+        // session) détruisait silencieusement la session sans laisser
+        // aucune trace — un détournement de session passait inaperçu côté
+        // surveillance. Le binding lui-même reste une défense faible (un
+        // attaquant qui vole un cookie peut aussi copier le user-agent),
+        // mais doit au moins être journalisé pour donner une visibilité
+        // forensique. sha256 remplace md5 (obsolète, sans impact réel ici
+        // puisqu'il ne s'agit pas d'un hash cryptographique de secret, mais
+        // évite un signal faux-positif dans les futurs audits/scanners).
         if (isset($_SESSION['_ua'])) {
-            $currentUa = md5($_SERVER['HTTP_USER_AGENT'] ?? '');
-            if ($_SESSION['_ua'] !== $currentUa) {
+            $currentUa = hash('sha256', $_SERVER['HTTP_USER_AGENT'] ?? '');
+            if (!hash_equals((string) $_SESSION['_ua'], $currentUa)) {
+                $userId = $_SESSION['user_id'] ?? $_SESSION['user']['id'] ?? null;
+                if (function_exists('logger')) {
+                    logger('security')->warning('Session détruite : changement de user-agent détecté (vol de session possible).', [
+                        'user_id' => $userId,
+                        'ip' => $_SERVER['REMOTE_ADDR'] ?? null,
+                    ]);
+                }
                 self::destroy();
                 session_start();
             }
         } else {
-            $_SESSION['_ua'] = md5($_SERVER['HTTP_USER_AGENT'] ?? '');
+            $_SESSION['_ua'] = hash('sha256', $_SERVER['HTTP_USER_AGENT'] ?? '');
         }
 
         // Régénération périodique de l'ID de session
