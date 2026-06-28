@@ -26,6 +26,14 @@ Le script stocke uniquement le hash Argon2id de ce mot de passe. Les comptes son
 Si la connexion affiche `Identifiants invalides`, importer le correctif SQL :
 `database/seeds/2026_06_03_lot36_reset_demo_passwords.sql` (mot de passe `DemoAutosav!2026`, reseau automobile uniquement) ou, pour tout unifier, `database/seeds/2026_06_27_unifier_mot_de_passe_demo.sql` (mot de passe `Demo2026!`, tous comptes demo).
 
+## Compte démo super_administrateur
+
+Aucun des lots ci-dessus ne crée de compte `super_administrateur` (rôle plateforme, sans société associée). `database/seeds/2026_06_28_demo_super_admin.sql` ajoute :
+
+| Identifiant | Email | Rôle | Mot de passe |
+| --- | --- | --- | --- |
+| `super.admin.demo` | `super.admin.demo@autosav.demo` | Super-administrateur | `Demo2026!` |
+
 | Identifiant | Email | Role | Fonction | Societe / concession active | Marque active |
 | --- | --- | --- | --- | --- | --- |
 | `admin.general` | `admin.general@autosav.demo` | Administrateur general societe | Direction generale | Auto Avenue Groupe | Toutes |
