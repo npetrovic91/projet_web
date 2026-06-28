@@ -5,17 +5,23 @@ namespace Nenad\Autosav\Modules\SuperAdmin\Controllers;
 
 use Nenad\Autosav\Core\Controller\BaseController;
 use Nenad\Autosav\Core\Security\Class\SuperAdminAccessGuard;
+use Nenad\Autosav\Core\Services\Production\LogViewerService;
+use Nenad\Autosav\Core\Services\Production\SessionViewerService;
 use Nenad\Autosav\Modules\Society\Services\ServiceSocietes;
 use Nenad\Autosav\Modules\SuperAdmin\Services\SuperAdminService;
 
 final class SuperAdminController extends BaseController
 {
     private SuperAdminService $service;
+    private LogViewerService $logs;
+    private SessionViewerService $sessions;
 
     public function __construct(?\Nenad\Autosav\Core\Database\Database $database = null)
     {
         parent::__construct($database);
         $this->service = new SuperAdminService();
+        $this->logs = new LogViewerService();
+        $this->sessions = new SessionViewerService();
     }
 
     public function index(): void
@@ -89,5 +95,65 @@ final class SuperAdminController extends BaseController
         SuperAdminAccessGuard::ouvrirAcces($this->operatorId(), $societeId, $motif, $justification, $retour);
         $this->flash('warning', 'Accès aux données métier de cette société journalisé (motif : ' . $motif . ').');
         $this->redirect($retour !== '' ? $retour : ('/companies/' . $societeId));
+    }
+
+    /**
+     * Lecture des journaux applicatifs (storage/logs/) — réservé au
+     * super_administrateur, lecture seule.
+     */
+    public function logs(): void
+    {
+        $this->requireRole(defined('ROLE_SUPERADMIN') ? ROLE_SUPERADMIN : 'super_administrateur');
+
+        $canal = (string) $this->get('canal', 'application');
+        $recherche = (string) $this->get('q', '');
+        $niveau = (string) $this->get('niveau', '');
+        $limite = (int) $this->get('limite', 200);
+
+        $this->render('SuperAdmin/logs', [
+            'pageTitle' => 'Super-admin — Journaux applicatifs',
+            'breadcrumb' => ['Super-admin' => '/super-admin', 'Journaux' => '/super-admin/logs'],
+            'canaux' => $this->logs->canaux(),
+            'canalActif' => $canal,
+            'recherche' => $recherche,
+            'niveau' => $niveau,
+            'limite' => $limite,
+            'resultat' => $this->logs->lire($canal, $limite, $recherche, $niveau),
+        ]);
+    }
+
+    /**
+     * Liste des sessions PHP fichier (storage/sessions/) — réservé au
+     * super_administrateur, lecture seule.
+     */
+    public function sessions(): void
+    {
+        $this->requireRole(defined('ROLE_SUPERADMIN') ? ROLE_SUPERADMIN : 'super_administrateur');
+
+        $this->render('SuperAdmin/sessions', [
+            'pageTitle' => 'Super-admin — Sessions actives',
+            'breadcrumb' => ['Super-admin' => '/super-admin', 'Sessions' => '/super-admin/sessions'],
+            'sessions' => $this->sessions->lister(),
+        ]);
+    }
+
+    /**
+     * Détail d'une session précise (contenu décodé).
+     */
+    public function sessionShow(string $id): void
+    {
+        $this->requireRole(defined('ROLE_SUPERADMIN') ? ROLE_SUPERADMIN : 'super_administrateur');
+
+        $session = $this->sessions->afficher($id);
+        if ($session === null) {
+            $this->flash('error', 'Session introuvable ou expirée.');
+            $this->redirect('/super-admin/sessions');
+        }
+
+        $this->render('SuperAdmin/session_show', [
+            'pageTitle' => 'Super-admin — Session ' . $id,
+            'breadcrumb' => ['Super-admin' => '/super-admin', 'Sessions' => '/super-admin/sessions', $id => null],
+            'session' => $session,
+        ]);
     }
 }

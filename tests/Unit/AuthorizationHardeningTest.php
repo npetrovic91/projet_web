@@ -18,7 +18,11 @@ assert(str_contains($rolesAjaxController, "LOWER(r.rol_code) NOT IN"));
 // 2026-06-25 : ajout de justificationForm()/justificationSubmit() (ACC-007,
 // acces justifie aux donnees metier), toutes deux protegees par requireRole()
 // comme les actions existantes : 3 + 2 = 5.
-assert(substr_count($superAdminController, 'requireRole(') === 5);
+// 2026-06-29 : ajout de logs()/sessions()/sessionShow() (lecture des
+// journaux et des sessions PHP fichier, reservee au super_administrateur),
+// toutes trois protegees par requireRole() comme les actions existantes :
+// 5 + 3 = 8.
+assert(substr_count($superAdminController, 'requireRole(') === 8);
 assert(substr_count($autoTestController, 'requireRole(') === 4);
 
 echo "AuthorizationHardeningTest SUCCESS\n";

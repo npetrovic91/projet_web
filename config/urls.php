@@ -727,6 +727,13 @@ return [
     'GET /super-admin/justification'       => ['SuperAdmin\\Controllers\\SuperAdminController', 'justificationForm',   ['auth', 'maintenance', 'role:super_administrateur']],
     'POST /super-admin/justification'      => ['SuperAdmin\\Controllers\\SuperAdminController', 'justificationSubmit', ['auth', 'maintenance', 'role:super_administrateur', 'csrf']],
 
+    // Lecture des journaux (storage/logs/) et des sessions PHP fichier
+    // (storage/sessions/) — reserve au super_administrateur, lecture seule
+    // (Core/Services/Production/LogViewerService.php et SessionViewerService.php).
+    'GET /super-admin/logs'                => ['SuperAdmin\\Controllers\\SuperAdminController', 'logs',         ['auth', 'maintenance', 'role:super_administrateur']],
+    'GET /super-admin/sessions'            => ['SuperAdmin\\Controllers\\SuperAdminController', 'sessions',     ['auth', 'maintenance', 'role:super_administrateur']],
+    'GET /super-admin/sessions/{id}'       => ['SuperAdmin\\Controllers\\SuperAdminController', 'sessionShow',  ['auth', 'maintenance', 'role:super_administrateur']],
+
     'GET /autotests'                       => ['AutoTests\\Controllers\\AutoTestController',    'index',       ['auth', 'maintenance']],
     'GET /admin/autotests'                 => ['AutoTests\\Controllers\\AutoTestController',    'index',       ['auth', 'maintenance']],
     'GET /autotests/export.json'           => ['AutoTests\\Controllers\\AutoTestController',    'exportJson',  ['auth', 'maintenance']],
